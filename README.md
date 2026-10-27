@@ -60,7 +60,7 @@ FairShift replaces fragmented manual registers with a **secure, transparent, mul
 ### 2. Transparent Multilingual Payslip & Formula Proof
 - **Transparent Formula:**  
   $$\text{Net Pay} = (\text{Regular Hours} \times \text{Rate}) + (\text{Overtime Hours} \times \text{Rate} \times 1.5) - \text{PF/ESI Deductions (5\%)}$$
-- **Multilingual Support:** One-click translation of pay items and mathematical explanations into **English**, **Hindi (हिन्दी)**, and **Tamil (தமிழ்)**.
+- **Multilingual Support:** One-click translation of pay items and mathematical explanations into **English**, **Hindi (हिन्दी)**, **Tamil (தமிழ்)**, and **Telugu (తెలుగు)**.
 - **Visual Proof:** Eliminates wage disputes before pay day by providing workers with live visual calculations.
 
 ### 3. Zero-Knowledge Anonymous Grievance & Safety Reporting
@@ -79,18 +79,19 @@ FairShift replaces fragmented manual registers with a **secure, transparent, mul
 
 ---
 
-## 🔒 Security & Architectural Rigor
+## 🔒 Security & Architectural Rigor (OWASP Compliant)
 
 - **Database:** PostgreSQL (supports **Neon Serverless PostgreSQL** via `DATABASE_URL` with automatic SQLite local fallback).
 - **SQL Injection Defense:** All database interactions are governed through parameterized SQLAlchemy ORM queries.
 - **XSS Sanitization:** User descriptions and notes are strictly sanitized and HTML-escaped.
 - **Zero-Knowledge Privacy:** Grievance endpoints drop all client identifiers before database writes.
 - **Rate Limiting:** `Flask-Limiter` protects endpoints against brute-force flooding (120 req/min).
-- **Hardened HTTP Headers:** Enforces CSP, X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, X-XSS-Protection.
+- **Hardened HTTP Headers:** Enforces CSP, HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, X-XSS-Protection.
+- **Accessibility (WCAG 2.1 AA):** Screen-reader landmarks, skip-links, ARIA tablists, high color contrast, full keyboard navigation.
 
 ---
 
-## 🧪 Automated Test Suite (13/13 Passing)
+## 🧪 Automated Test Suite (20/20 Passing)
 
 Run test suite:
 ```bash
@@ -104,11 +105,17 @@ Tests cover:
 - Duplicate check-in prevention
 - Overtime calculation accuracy (1.5× rate above 8.0 daily hours)
 - Mathematical payslip formula and deduction verification
-- Multilingual translations (Hindi and Tamil)
-- 48-hour fatigue limit detection
+- Multilingual translations (English, Hindi, Tamil, and Telugu)
+- 48-hour fatigue limit detection (UN SDG 8.8)
 - Anonymous ticket generation and zero-knowledge status tracking
 - Employer status triage workflow
-- XSS injection sanitization and OWASP security headers
+- XSS injection sanitization and OWASP security headers (CSP, HSTS)
+- Strict regex input validation for worker codes (`CN-101`) and PINs
+- Shift hours boundary validation (<0.1h and >24h rejection)
+- Ticket tracking error handling and 404 responses
+- Mathematical negative number guardrails in wage calculation
+- Health check endpoint with SDG 8 metadata
+- Accessible DOM rendering and skip link verification
 
 ---
 
@@ -132,10 +139,16 @@ python app.py
 
 ---
 
-## ☁️ Deployment on Google Cloud Run
+## ☁️ Deployment
 
-This repository is containerized and ready for Google Cloud Run:
+### Option A: Render (Direct Git Push)
+1. In Render Dashboard, click **New Web Service** and select `rohith1246/promptwars`.
+2. Build Command: `pip install -r requirements.txt`
+3. Start Command: `gunicorn --bind 0.0.0.0:$PORT wsgi:app`
+4. Add Environment Variable:
+   - `DATABASE_URL`: `postgresql://neondb_owner:npg_ynNQTOj3P0pq@ep-calm-star-b5252an2-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require`
 
+### Option B: Google Cloud Run
 ```bash
 gcloud run deploy fairshift \
   --source . \
