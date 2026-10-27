@@ -20,6 +20,7 @@ from flask import Flask, render_template, request, jsonify, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from database import (
     init_db, db_session, Worker, Attendance, Grievance, generate_ticket_code
@@ -33,6 +34,9 @@ from wage_engine import calculate_payslip
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "fairshift-sdg8-decent-work-secret-key-2026")
 CORS(app)
+
+# ProxyFix for Render, Cloudflare, and Gunicorn reverse proxies
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Security: Rate Limiting
 limiter = Limiter(
@@ -147,7 +151,7 @@ def check_out():
     """
     data = request.get_json() or {}
     worker_id = data.get("worker_id")
-    hours_worked = data.get("simulated_hours")  # Option to simulate worked hours for demonstration
+    hours_worked = data.get("simulated_hours")
 
     session = db_session()
     today = date.today()
@@ -156,7 +160,6 @@ def check_out():
     ).first()
 
     if not attendance:
-        # Fallback to any latest open attendance
         attendance = session.query(Attendance).filter_by(
             worker_id=worker_id, status="checked_in"
         ).order_by(Attendance.id.desc()).first()
@@ -167,14 +170,12 @@ def check_out():
     now = datetime.utcnow()
     attendance.check_out = now
 
-    # Calculate duration
     if hours_worked is not None and float(hours_worked) > 0:
         total_h = float(hours_worked)
     else:
         diff_seconds = (now - attendance.check_in).total_seconds()
         total_h = max(1.0, round(diff_seconds / 3600.0, 2))
 
-    # Standard shift = 8.0 hours; anything above is classified as overtime
     standard_shift = attendance.worker.daily_shift_hours or 8.0
     if total_h > standard_shift:
         attendance.regular_hours = standard_shift
@@ -218,7 +219,6 @@ def get_payslip(worker_id):
     if not worker:
         return jsonify({"error": "Worker not found."}), 404
 
-    # Fetch last 7 days attendance records for this worker
     attendance_records = session.query(Attendance).filter_by(worker_id=worker.id).all()
     payslip_data = calculate_payslip(
         worker_dict=worker.to_dict(),
@@ -250,7 +250,6 @@ def submit_grievance():
     session = db_session()
     ticket_code = generate_ticket_code()
 
-    # Ensure unique ticket code
     while session.query(Grievance).filter_by(ticket_code=ticket_code).first():
         ticket_code = generate_ticket_code()
 
@@ -351,7 +350,6 @@ def get_stats():
     open_grievances = sum(1 for g in grievances if g.status != "Resolved")
     critical_safety = sum(1 for g in grievances if g.urgency == "Critical" and g.status != "Resolved")
 
-    # Fatigue warning: Any worker with > 48 hours logged in attendance records
     fatigued_count = 0
     for w in workers:
         w_records = [r for r in attendance_records if r.worker_id == w.id]

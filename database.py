@@ -9,7 +9,7 @@ import string
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey, inspect
+    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, scoped_session
 
@@ -19,11 +19,23 @@ Base = declarative_base()
 
 
 def get_database_uri() -> str:
-    """Retrieve and normalize database URI for Neon PostgreSQL or fallback."""
+    """
+    Retrieve and normalize database URI for Neon PostgreSQL or fallback.
+    Supports both psycopg (v3) and psycopg2 drivers automatically.
+    """
     uri = os.getenv("DATABASE_URL", "sqlite:///fairshift.db")
+    
     # Neon and Heroku provide postgres:// URLs, SQLAlchemy requires postgresql://
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
+
+    # Check driver compatibility: if psycopg (v3) is not installed, use psycopg2 explicitly
+    if uri.startswith("postgresql://") and not uri.startswith("postgresql+"):
+        try:
+            import psycopg  # noqa: F401
+        except ImportError:
+            uri = uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+
     return uri
 
 
@@ -33,7 +45,7 @@ connect_args = {"check_same_thread": False} if database_uri.startswith("sqlite")
 engine = create_engine(
     database_uri,
     connect_args=connect_args,
-    pool_pre_ping=True,  # Keeps Neon serverless connection alive and drops stale connections
+    pool_pre_ping=True,  # Drops stale serverless connections
     pool_recycle=300
 )
 
@@ -178,11 +190,8 @@ def init_db():
         workers = session.query(Worker).all()
 
         for w in workers:
-            # 5 days of attendance history for each worker
             for day_offset in range(1, 6):
                 hist_date = today - timedelta(days=day_offset)
-                
-                # Make some workers have realistic overtime to demonstrate transparent calculation and fatigue alerts
                 if w.worker_code in ["CN-102", "CL-202"]:
                     reg_h = 8.0
                     ot_h = 3.5  # Heavy overtime -> Fatigue alert
