@@ -26,7 +26,8 @@ from database import (
     init_db, db_session, Worker, Attendance, Grievance, generate_ticket_code
 )
 from security import (
-    sanitize_text, validate_ticket_code, sanitize_grievance_payload, add_security_headers
+    sanitize_text, validate_ticket_code, sanitize_grievance_payload, add_security_headers,
+    validate_worker_code, validate_pin, validate_shift_hours
 )
 from wage_engine import calculate_payslip
 
@@ -108,6 +109,12 @@ def auth_login():
     else:  # Worker Login
         worker_code = data.get("worker_code", "").strip().upper()
         pin = data.get("pin", "").strip()
+
+        if not validate_worker_code(worker_code):
+            return jsonify({"error": f"Invalid worker code format '{worker_code}'. Expected format like CN-101 or CL-201."}), 400
+
+        if not validate_pin(pin):
+            return jsonify({"error": "PIN must be a 4 to 6 digit numerical code."}), 400
 
         db = db_session()
         worker = db.query(Worker).filter_by(worker_code=worker_code).first()
@@ -222,11 +229,14 @@ def check_out():
     now = datetime.utcnow()
     attendance.check_out = now
 
-    if hours_worked is not None and float(hours_worked) > 0:
+    if hours_worked is not None:
+        valid_hours, err_msg = validate_shift_hours(hours_worked)
+        if not valid_hours:
+            return jsonify({"error": err_msg}), 400
         total_h = float(hours_worked)
     else:
         diff_seconds = (now - attendance.check_in).total_seconds()
-        total_h = max(1.0, round(diff_seconds / 3600.0, 2))
+        total_h = max(0.5, round(diff_seconds / 3600.0, 2))
 
     standard_shift = attendance.worker.daily_shift_hours or 8.0
     if total_h > standard_shift:
@@ -341,6 +351,9 @@ def update_grievance_status():
     ticket_code = data.get("ticket_code", "").strip().upper()
     new_status = data.get("status", "").strip()
     resolution_note = sanitize_text(data.get("resolution_note", ""), max_length=1000)
+
+    if not validate_ticket_code(ticket_code):
+        return jsonify({"error": "Invalid ticket code format."}), 400
 
     valid_statuses = ["Open", "Under Investigation", "Resolved"]
     if new_status not in valid_statuses:

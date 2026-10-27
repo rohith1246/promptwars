@@ -343,12 +343,15 @@ async function doCheckOut() {
 function setPayslipLanguage(lang) {
   state.language = lang;
   
-  ["en", "hi", "ta"].forEach(l => {
+  ["en", "hi", "ta", "te"].forEach(l => {
     const btn = document.getElementById(`lang${l.charAt(0).toUpperCase() + l.slice(1)}Btn`);
+    if (!btn) return;
     if (l === lang) {
-      btn.className = "px-2 py-0.5 text-[11px] font-bold rounded bg-indigo-600 text-white";
+      btn.className = "px-2 py-0.5 text-[11px] font-bold rounded bg-indigo-600 text-white shadow-sm";
+      btn.setAttribute("aria-selected", "true");
     } else {
-      btn.className = "px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700";
+      btn.className = "px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition";
+      btn.setAttribute("aria-selected", "false");
     }
   });
 

@@ -32,6 +32,11 @@
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-brand-500 selection:text-white">
 
+  <!-- Accessible Skip Link for Screen Readers & Keyboard Navigation (WCAG 2.1 AA) -->
+  <a href="#mainContent" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-700 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-white font-bold text-xs">
+    Skip to main content
+  </a>
+
   <!-- TOP APP BAR -->
   <header class="border-b border-slate-200 bg-white/95 backdrop-blur sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -82,11 +87,8 @@
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <main id="mainContent" role="main" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-    <!-- ======================================================== -->
-    <!-- SCREEN 1: SECURE LOGIN SCREEN (SHOWN WHEN NOT LOGGED IN) -->
-    <!-- ======================================================== -->
     <!-- ======================================================== -->
     <!-- SCREEN 1: SECURE LOGIN SCREEN (SHOWN WHEN NOT LOGGED IN) -->
     <!-- ======================================================== -->
@@ -362,11 +364,12 @@
                   <h4 class="text-sm font-bold text-slate-900">2. Transparent Payslip & Formula</h4>
                 </div>
                 
-                <!-- Language Selector for Worker -->
-                <div class="flex items-center space-x-1">
-                  <button onclick="setPayslipLanguage('en')" id="langEnBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-indigo-600 text-white">EN</button>
-                  <button onclick="setPayslipLanguage('hi')" id="langHiBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700">हिन्दी</button>
-                  <button onclick="setPayslipLanguage('ta')" id="langTaBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700">தமிழ்</button>
+                <!-- Language Selector for Worker (WCAG Accessible Tablist) -->
+                <div class="flex items-center space-x-1" role="tablist" aria-label="Payslip Language Options">
+                  <button role="tab" aria-selected="true" onclick="setPayslipLanguage('en')" id="langEnBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-indigo-600 text-white shadow-sm" aria-label="English Language">EN</button>
+                  <button role="tab" aria-selected="false" onclick="setPayslipLanguage('hi')" id="langHiBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition" aria-label="Hindi Language (हिन्दी)">हिन्दी</button>
+                  <button role="tab" aria-selected="false" onclick="setPayslipLanguage('ta')" id="langTaBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition" aria-label="Tamil Language (தமிழ்)">தமிழ்</button>
+                  <button role="tab" aria-selected="false" onclick="setPayslipLanguage('te')" id="langTeBtn" class="px-2 py-0.5 text-[11px] font-bold rounded bg-slate-100 text-slate-700 hover:bg-slate-200 transition" aria-label="Telugu Language (తెలుగు)">తెలుగు</button>
                 </div>
               </div>
 
@@ -528,14 +531,14 @@
             </div>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
+              <table class="w-full text-left text-xs" aria-label="Shift Attendance and Overtime Records">
                 <thead class="bg-slate-50 text-slate-500 font-bold uppercase border-b border-slate-200">
                   <tr>
-                    <th class="py-2 px-2.5">Worker</th>
-                    <th class="py-2 px-2.5">Date</th>
-                    <th class="py-2 px-2.5">Regular</th>
-                    <th class="py-2 px-2.5">Overtime</th>
-                    <th class="py-2 px-2.5">Status</th>
+                    <th scope="col" class="py-2 px-2.5">Worker</th>
+                    <th scope="col" class="py-2 px-2.5">Date</th>
+                    <th scope="col" class="py-2 px-2.5">Regular</th>
+                    <th scope="col" class="py-2 px-2.5">Overtime</th>
+                    <th scope="col" class="py-2 px-2.5">Status</th>
                   </tr>
                 </thead>
                 <tbody id="attendanceTableBody" class="divide-y divide-slate-100 text-slate-700">

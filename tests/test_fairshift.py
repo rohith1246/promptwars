@@ -75,7 +75,7 @@ class FairShiftTestSuite(unittest.TestCase):
         """Verify invalid worker credentials are rejected."""
         res = self.client.post("/api/auth/login", json={
             "role": "worker",
-            "worker_code": "NON-EXISTENT",
+            "worker_code": "CN-999",
             "pin": "0000"
         })
         self.assertEqual(res.status_code, 404)
@@ -154,7 +154,7 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertIn("Formula:", data["formula_explanation"])
 
     def test_05_multilingual_payslip_translations(self):
-        """Verify payslip translations for Hindi (hi) and Tamil (ta)."""
+        """Verify payslip translations for Hindi (hi), Tamil (ta), and Telugu (te)."""
         res_hi = self.client.get("/api/payslip/1?lang=hi")
         self.assertEqual(res_hi.status_code, 200)
         data_hi = json.loads(res_hi.data)
@@ -164,6 +164,11 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertEqual(res_ta.status_code, 200)
         data_ta = json.loads(res_ta.data)
         self.assertIn("வெளிப்படையான சம்பள விபரம்", data_ta["labels"]["title"])
+
+        res_te = self.client.get("/api/payslip/1?lang=te")
+        self.assertEqual(res_te.status_code, 200)
+        data_te = json.loads(res_te.data)
+        self.assertIn("పారదర్శక వేతన వివరాలు", data_te["labels"]["title"])
 
     def test_06_fatigue_alert_guardrail_detection(self):
         """Verify fatigue alert triggers when total hours exceed 48 hours weekly cap."""
@@ -249,6 +254,85 @@ class FairShiftTestSuite(unittest.TestCase):
         data = json.loads(res_track.data)
         self.assertNotIn("<script>", data["description"])
         self.assertIn("&lt;script&gt;", data["description"])
+
+    def test_11_input_validation_worker_code_and_pin_format(self):
+        """Verify malformed worker codes and invalid PINs are rejected with 400 Bad Request."""
+        # Invalid format code
+        res_bad_code = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": "INVALID_CODE_123",
+            "pin": "1234"
+        })
+        self.assertEqual(res_bad_code.status_code, 400)
+        self.assertIn("Invalid worker code format", json.loads(res_bad_code.data)["error"])
+
+        # Invalid PIN (non-digit or wrong length)
+        res_bad_pin = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": "CN-101",
+            "pin": "abc"
+        })
+        self.assertEqual(res_bad_pin.status_code, 400)
+        self.assertIn("PIN must be a 4 to 6 digit", json.loads(res_bad_pin.data)["error"])
+
+    def test_12_shift_hours_boundary_validation(self):
+        """Verify checkout rejects negative, zero, or physically impossible (>24h) shift hours."""
+        self.client.post("/api/check-in", json={"worker_id": 3})
+
+        # Test shift > 24 hours rejection
+        res_excess = self.client.post("/api/check-out", json={
+            "worker_id": 3,
+            "simulated_hours": 32.0
+        })
+        self.assertEqual(res_excess.status_code, 400)
+        self.assertIn("cannot exceed 24 hours", json.loads(res_excess.data)["error"])
+
+        # Test shift < 0.1 hours rejection
+        res_subzero = self.client.post("/api/check-out", json={
+            "worker_id": 3,
+            "simulated_hours": -5.0
+        })
+        self.assertEqual(res_subzero.status_code, 400)
+        self.assertIn("at least 0.1 hours", json.loads(res_subzero.data)["error"])
+
+    def test_13_ticket_code_tracking_and_invalid_format_rejection(self):
+        """Verify tracking rejects malformed ticket codes before querying the database."""
+        res_bad = self.client.get("/api/grievances/track/NOT-A-VALID-CODE")
+        self.assertEqual(res_bad.status_code, 400)
+        self.assertIn("Invalid ticket code format", json.loads(res_bad.data)["error"])
+
+    def test_14_nonexistent_ticket_returns_404(self):
+        """Verify validly formatted but non-existent ticket code returns 404."""
+        res = self.client.get("/api/grievances/track/FS-99999")
+        self.assertEqual(res.status_code, 404)
+        self.assertIn("not found", json.loads(res.data)["error"])
+
+    def test_15_wage_engine_negative_hours_and_zero_rate_guardrails(self):
+        """Verify wage engine mathematically clamps negative hours and rates safely."""
+        from wage_engine import calculate_payslip
+        mock_worker = {"hourly_rate": -50.0, "overtime_multiplier": 0.5, "name": "Test Worker"}
+        mock_records = [{"regular_hours": -8.0, "overtime_hours": -4.0}]
+        slip = calculate_payslip(mock_worker, mock_records, lang="en")
+        self.assertEqual(slip["hourly_rate"], 0.0)
+        self.assertEqual(slip["total_regular_hours"], 0.0)
+        self.assertEqual(slip["base_pay"], 0.0)
+        self.assertEqual(slip["net_pay"], 0.0)
+
+    def test_16_health_check_endpoint(self):
+        """Verify health check endpoint returns 200 with UN SDG 8 alignment metadata."""
+        res = self.client.get("/health")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertEqual(data["status"], "healthy")
+        self.assertIn("SDG 8", data["theme"])
+
+    def test_17_homepage_accessible_rendering(self):
+        """Verify homepage renders with accessible landmarks, skip link, and login gate."""
+        res = self.client.get("/")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b"Skip to main content", res.data)
+        self.assertIn(b"loginScreen", res.data)
+        self.assertIn(b"SDG 8: Decent Work", res.data)
 
 
 if __name__ == "__main__":

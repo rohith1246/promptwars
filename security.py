@@ -25,6 +25,35 @@ def sanitize_text(text: str, max_length: int = 2000) -> str:
     return escaped[:max_length]
 
 
+def validate_worker_code(code: str) -> bool:
+    """Validate format of worker code (e.g. CN-101, CL-201)."""
+    if not code:
+        return False
+    return bool(re.match(r"^[A-Z]{2,4}-\d{3,5}$", code.strip().upper()))
+
+
+def validate_pin(pin: str) -> bool:
+    """Validate format of 4 to 6 digit security PIN."""
+    if not pin:
+        return False
+    return bool(re.match(r"^\d{4,6}$", pin.strip()))
+
+
+def validate_shift_hours(hours: float) -> Tuple[bool, str]:
+    """Validate shift duration within realistic, non-negative, and safe labor limits."""
+    try:
+        val = float(hours)
+    except (ValueError, TypeError):
+        return False, "Shift hours must be a valid number."
+    
+    if val < 0.1:
+        return False, "Shift duration must be at least 0.1 hours (6 minutes)."
+    if val > 24.0:
+        return False, "Shift duration cannot exceed 24 hours in a single calendar day."
+    
+    return True, ""
+
+
 def validate_ticket_code(code: str) -> bool:
     """Validate format of anonymous grievance ticket code (e.g. FS-12345)."""
     if not code:
@@ -74,12 +103,14 @@ def sanitize_grievance_payload(payload: Dict[str, Any]) -> Tuple[bool, str, Dict
 
 
 def add_security_headers(response):
-    """Inject hardened HTTP security headers into every outgoing response."""
+    """Inject hardened HTTP security headers into every outgoing response (OWASP Top 10 Compliance)."""
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com; "

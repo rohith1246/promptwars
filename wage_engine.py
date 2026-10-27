@@ -1,13 +1,13 @@
 """
 FairShift - Wage & Transparent Payslip Calculation Engine
-Calculates wages mathematically and provides transparent explanations in English, Hindi, and Tamil.
-Monitors fatigue guardrails (SDG 8.8: >48 hours weekly threshold).
+Calculates wages mathematically and provides transparent explanations in English, Hindi, Tamil, and Telugu.
+Monitors fatigue guardrails (UN SDG 8.8: >48 hours weekly threshold).
 """
 
 from typing import Dict, Any, List
 
 
-TRANSLATIONS = {
+TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "en": {
         "title": "Transparent Wage Breakdown",
         "base_pay": "Regular Shift Pay",
@@ -40,6 +40,17 @@ TRANSLATIONS = {
         "formula": "சூத்திரம்: (வழக்கமான மணிநேரம் × வீதம்) + (ஓவர் டைம் × 1.5) - பிடித்தம்",
         "fatigue_safe": "சோர்வு நிலை: சாதாரண வேலை நேரம் (பாதுகாப்பானது)",
         "fatigue_warning": "எச்சரிக்கை: வாராந்திர வேலை நேரம் 48 மணிநேரத்தை தாண்டியுள்ளது. ஓய்வு தேவை."
+    },
+    "te": {
+        "title": "పారదర్శక వేతన వివరాలు (Transparent Payslip)",
+        "base_pay": "సాధారణ షిఫ్ట్ వేతనం (Base Pay)",
+        "overtime_pay": "ఓవర్‌టైమ్ వేతనం (1.5x రేటు)",
+        "gross_pay": "మొత్తం సంపాదన (Gross Earnings)",
+        "deductions": "చట్టబద్ధమైన తగ్గింపులు (PF / ESI 5%)",
+        "net_pay": "చేతికి అందే నికర వేతనం (Take-Home)",
+        "formula": "సూత్రం: (సాధారణ గంటలు × రేటు) + (ఓవర్‌టైమ్ గంటలు × రేటు × 1.5) - తగ్గింపులు",
+        "fatigue_safe": "అలసట స్థితి: సాధారణ పని గంటలు (సురక్షితం)",
+        "fatigue_warning": "హెచ్చరిక: వారపు పని గంటలు 48 దాటాయి. ప్రమాద నివారణకు విశ్రాంతి అవసరం."
     }
 }
 
@@ -47,16 +58,25 @@ TRANSLATIONS = {
 def calculate_payslip(worker_dict: Dict[str, Any], attendance_records: List[Dict[str, Any]], lang: str = "en") -> Dict[str, Any]:
     """
     Computes mathematical transparent payslip with plain-language explanation.
+    
+    Parameters:
+        worker_dict: Dictionary containing worker's metadata (hourly_rate, overtime_multiplier, etc.)
+        attendance_records: List of shift attendance records for the billing cycle
+        lang: Selected language code ('en', 'hi', 'ta', 'te')
+        
+    Returns:
+        Structured dictionary with mathematical breakdown, statutory deductions, fatigue analysis, and localized labels.
     """
     if lang not in TRANSLATIONS:
         lang = "en"
     text = TRANSLATIONS[lang]
 
-    hourly_rate = float(worker_dict.get("hourly_rate", 75.0))
-    ot_multiplier = float(worker_dict.get("overtime_multiplier", 1.5))
+    # Defensive parsing with non-negative bounds
+    hourly_rate = max(0.0, float(worker_dict.get("hourly_rate", 75.0) or 75.0))
+    ot_multiplier = max(1.0, float(worker_dict.get("overtime_multiplier", 1.5) or 1.5))
 
-    total_reg_hours = sum(r.get("regular_hours", 0.0) for r in attendance_records)
-    total_ot_hours = sum(r.get("overtime_hours", 0.0) for r in attendance_records)
+    total_reg_hours = max(0.0, sum(float(r.get("regular_hours", 0.0) or 0.0) for r in attendance_records))
+    total_ot_hours = max(0.0, sum(float(r.get("overtime_hours", 0.0) or 0.0) for r in attendance_records))
     total_work_hours = total_reg_hours + total_ot_hours
 
     base_pay = round(total_reg_hours * hourly_rate, 2)
@@ -68,15 +88,15 @@ def calculate_payslip(worker_dict: Dict[str, Any], attendance_records: List[Dict
     deductions = round(gross_pay * 0.05, 2)
     net_pay = round(gross_pay - deductions, 2)
 
-    # Fatigue Alert: ILO / Labor Law standard 48 hours / week
+    # Fatigue Alert: ILO / Labor Law standard 48 hours / week (UN SDG 8.8)
     is_fatigued = total_work_hours > 48.0
     fatigue_status = text["fatigue_warning"] if is_fatigued else text["fatigue_safe"]
 
     return {
         "language": lang,
-        "worker_name": worker_dict.get("name"),
-        "worker_code": worker_dict.get("worker_code"),
-        "role": worker_dict.get("role"),
+        "worker_name": worker_dict.get("name", "Unknown Worker"),
+        "worker_code": worker_dict.get("worker_code", "UNKNOWN"),
+        "role": worker_dict.get("role", "Worker"),
         "hourly_rate": hourly_rate,
         "overtime_rate": overtime_rate,
         "total_regular_hours": round(total_reg_hours, 1),
