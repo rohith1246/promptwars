@@ -114,33 +114,49 @@
     <section id="overviewSection" class="space-y-12 pb-4">
       
       <!-- HERO BANNER -->
-      <div class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl">
-        <div class="relative z-10 max-w-3xl space-y-4">
-          <div class="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wide">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>UN SDG 8 • Decent Work & Economic Growth</span>
+      <div class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <div class="lg:col-span-7 space-y-4">
+            <div class="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wide">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>UN SDG 8 • Decent Work & Economic Growth</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+              FairShift: The Decent Work Platform for Employee-Intensive Organisations
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+              Millions of frontline, deskless workers across construction sites and university operations face paper registers, WhatsApp roster chaos, and wage opacity. 
+              FairShift establishes an auditable, transparent shift tracking system with automated overtime math, trilingual payslips, and zero-knowledge safety reporting.
+            </p>
+            <div class="flex flex-wrap items-center gap-3 pt-2">
+              <a href="#loginScreen" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition shadow-lg flex items-center space-x-2">
+                <span>Launch Workforce Portal</span>
+                <span>↓</span>
+              </a>
+              <button onclick="setAuthTab('signup'); document.getElementById('loginScreen').scrollIntoView({behavior: 'smooth'})" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition flex items-center space-x-1.5">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                <span>Register Worker</span>
+              </button>
+              <button onclick="toggleAiChat()" class="px-4 py-2.5 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 text-white font-bold text-xs border border-indigo-400/40 transition flex items-center space-x-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Ask FairShift AI</span>
+              </button>
+            </div>
           </div>
-          <h2 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            FairShift: The Decent Work Platform for Employee-Intensive Organisations
-          </h2>
-          <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
-            Millions of frontline, deskless workers across construction sites and university operations face paper registers, WhatsApp roster chaos, and wage opacity. 
-            FairShift establishes an auditable, transparent shift tracking system with automated overtime math, trilingual payslips, and zero-knowledge safety reporting.
-          </p>
-          <div class="flex flex-wrap items-center gap-3 pt-3">
-            <a href="#loginScreen" class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition shadow-lg flex items-center space-x-2">
-              <span>Launch Workforce Portal</span>
-              <span>↓</span>
-            </a>
-            <button onclick="setAuthTab('signup'); document.getElementById('loginScreen').scrollIntoView({behavior: 'smooth'})" class="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition flex items-center space-x-2">
-              <i data-lucide="user-plus" class="w-4 h-4"></i>
-              <span>Register Worker Account</span>
-            </button>
-            <button onclick="toggleAiChat()" class="px-5 py-3 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs border border-indigo-400/40 transition flex items-center space-x-2">
-              <i data-lucide="sparkles" class="w-4 h-4"></i>
-              <span>Ask FairShift Gemini AI</span>
-            </button>
+
+          <!-- Hero Stylish Visual Card -->
+          <div class="lg:col-span-5 relative group">
+            <div class="relative overflow-hidden rounded-2xl border border-white/20 shadow-2xl bg-slate-800">
+              <img src="/static/images/hero_banner.jpg" alt="FairShift Decent Work Platform Illustration" class="w-full h-56 sm:h-64 object-cover object-center group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-4">
+                <span class="text-[11px] font-bold text-emerald-300 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                  SDG 8: Decent Work & Equal Pay Architecture
+                </span>
+              </div>
+            </div>
           </div>
+
         </div>
 
         <!-- 4 Key Stat Badges -->
@@ -229,28 +245,64 @@
           <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full self-start sm:self-auto">Neon PostgreSQL Multi-Tenant</span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
-            <div class="flex items-center space-x-2">
-              <span class="text-2xl">🏗️</span>
-              <div>
-                <h4 class="text-sm font-bold text-slate-900">Construction Site (Skyline Infrastructure)</h4>
-                <span class="text-[11px] text-slate-500">Masons, Structural Welders, Scaffolding Techs</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Skyline Infrastructure Construction Card -->
+          <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="h-44 overflow-hidden relative group">
+                <img src="/static/images/construction_site.jpg" alt="Skyline Infrastructure Construction Site" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent flex items-end p-3">
+                  <span class="text-xs font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-md border border-white/20">🏗️ Skyline Infrastructure</span>
+                </div>
+              </div>
+              <div class="p-5 space-y-2">
+                <h4 class="text-sm font-bold text-slate-900">High-Risk Construction Site Shifts</h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Active monitoring for structural welders, master masons, and scaffolding technicians. Enforces 1.5× overtime multipliers and scaffolding hazard triage.
+                </p>
+                <div class="flex flex-wrap gap-1.5 pt-1 text-[10px]">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">Masons (₹95/hr)</span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">Welders (₹110/hr)</span>
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-semibold">Scaffold Hazard Reporting</span>
+                </div>
               </div>
             </div>
-            <p class="text-xs text-slate-600">Focuses on high-altitude scaffold safety reporting, extreme shift overtime math, and daily wage protection.</p>
+            <div class="p-5 pt-0">
+              <button onclick="quickLogin('CN-101', 'worker')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition">
+                Enter Construction Demo →
+              </button>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
-            <div class="flex items-center space-x-2">
-              <span class="text-2xl">🎓</span>
-              <div>
-                <h4 class="text-sm font-bold text-slate-900">College Operations (SRM University Campus Facilities)</h4>
-                <span class="text-[11px] text-slate-500">Campus Sanitation Staff, Security Guards, Lab Assistants</span>
+          <!-- SRM University Operations Card -->
+          <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+            <div>
+              <div class="h-44 overflow-hidden relative group">
+                <img src="/static/images/campus_operations.jpg" alt="SRM University Campus Facilities" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent flex items-end p-3">
+                  <span class="text-xs font-bold text-white bg-slate-900/80 px-2.5 py-1 rounded-md border border-white/20">🎓 SRM University Operations</span>
+                </div>
+              </div>
+              <div class="p-5 space-y-2">
+                <h4 class="text-sm font-bold text-slate-900">Campus Facilities & Operations</h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Rosters for campus sanitation leads, perimeter security guards, and laboratory attendants. Enforces transparent hourly tracking and hazardous waste triage.
+                </p>
+                <div class="flex flex-wrap gap-1.5 pt-1 text-[10px]">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">Sanitation (₹75/hr)</span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">Security (₹80/hr)</span>
+                  <span class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 font-semibold">Chemical Safety Triage</span>
+                </div>
               </div>
             </div>
-            <p class="text-xs text-slate-600">Focuses on multi-gate security shifts, chemical storage hazard triage, and transparent university contractor payroll.</p>
+            <div class="p-5 pt-0">
+              <button onclick="quickLogin('CL-201', 'worker')" class="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition">
+                Enter Campus Demo →
+              </button>
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -831,24 +883,9 @@
       </div>
 
       <div class="flex items-center space-x-1">
-        <button onclick="toggleApiKeyInput()" title="Gemini API Key Settings" class="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition" aria-label="API Key Settings">
-          <i data-lucide="key" class="w-3.5 h-3.5"></i>
-        </button>
         <button onclick="toggleAiChat()" class="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition" aria-label="Close Chat">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
-      </div>
-    </div>
-
-    <!-- Optional API Key Collapsible Bar -->
-    <div id="aiApiKeyBox" class="hidden p-2.5 bg-indigo-50 border-b border-indigo-100 text-xs space-y-1.5">
-      <div class="flex items-center justify-between">
-        <label for="geminiApiKeyInput" class="text-[10px] font-bold text-indigo-900">Optional Gemini API Key:</label>
-        <span class="text-[9px] text-indigo-700">Stored locally in browser</span>
-      </div>
-      <div class="flex space-x-1.5">
-        <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-lg px-2 py-1 text-[11px] font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
-        <button onclick="saveGeminiApiKey()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition">Save</button>
       </div>
     </div>
 

@@ -705,32 +705,8 @@ function toggleAiChat() {
   initLucide();
 }
 
-function toggleApiKeyInput() {
-  const box = document.getElementById("aiApiKeyBox");
-  if (box) box.classList.toggle("hidden");
-}
-
-function saveGeminiApiKey() {
-  const input = document.getElementById("geminiApiKeyInput");
-  const key = input ? input.value.trim() : "";
-  if (key) {
-    localStorage.setItem("fairshift_gemini_key", key);
-    alert("Gemini API Key saved locally in your browser!");
-  } else {
-    localStorage.removeItem("fairshift_gemini_key");
-    alert("Gemini API Key cleared. FairShift will use built-in labor knowledge engine.");
-  }
-  toggleApiKeyInput();
-}
-
 function initAiChat() {
   aiChatInitialized = true;
-  const savedKey = localStorage.getItem("fairshift_gemini_key");
-  if (savedKey) {
-    const keyInput = document.getElementById("geminiApiKeyInput");
-    if (keyInput) keyInput.value = savedKey;
-  }
-
   appendAiMessage("bot", 
     "**Hello! I am FairShift AI — your Decent Work & Labor Rights Assistant.**\n\n" +
     "I can help explain overtime pay (1.5× formula), 48-hour fatigue guardrails, anonymous reporting, and transparent payslips under UN SDG 8.\n\n" +
@@ -801,13 +777,11 @@ async function submitAiChat(e) {
   container.appendChild(typingDiv);
   container.scrollTop = container.scrollHeight;
 
-  const savedKey = localStorage.getItem("fairshift_gemini_key") || "";
-
   try {
     const res = await fetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: message, api_key: savedKey })
+      body: JSON.stringify({ message: message })
     });
     const data = await res.json();
     

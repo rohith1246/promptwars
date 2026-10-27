@@ -521,12 +521,12 @@ def ai_chat():
     """
     data = request.get_json() or {}
     message = sanitize_text(data.get("message", ""), max_length=1000)
-    custom_api_key = data.get("api_key", "").strip()
 
     if not message:
         return jsonify({"error": "Message cannot be empty."}), 400
 
-    api_key = custom_api_key or os.getenv("GEMINI_API_KEY", "")
+    # Secured Server-Side API Key from .env (never exposed to client or browser)
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
     # If Gemini API key is available, call Google Gemini 1.5 Flash
     if api_key:
