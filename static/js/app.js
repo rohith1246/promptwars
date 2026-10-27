@@ -1,24 +1,24 @@
 /**
- * FairShift - Frontend Application Logic
- * Implements:
- * 1. Attendance & Overtime Shift Tracking
- * 2. Transparent Multilingual Payslip Engine (English, Hindi, Tamil)
- * 3. Zero-Knowledge Anonymous Grievance & Safety Reporting
- * Supports Construction & College Industries
+ * FairShift - Frontend Application Logic with Role-Based Authentication
+ * 1. Secure Authentication Flow (Worker Login with ID + PIN, Admin Login with Password)
+ * 2. 1-Click Evaluator/Judge Quick Login presets
+ * 3. Attendance & Shift Overtime Tracking
+ * 4. Transparent Multilingual Payslip Engine
+ * 5. Anonymous Grievance & Safety Incident Reporting
  */
 
 const state = {
+  authenticated: false,
+  currentUser: null,
   industry: "construction",
-  role: "worker",
   language: "en",
   workers: [],
-  selectedWorkerId: null,
-  activeCheckIn: null
+  selectedWorkerId: null
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
   initLucide();
-  await refreshAll();
+  await checkAuth();
 });
 
 function initLucide() {
@@ -27,15 +27,173 @@ function initLucide() {
   }
 }
 
-async function refreshAll() {
-  await loadWorkers();
-  await loadStats();
-  await loadAttendance();
-  await loadGrievances();
+// ============================================================
+// AUTHENTICATION & SESSION MANAGEMENT
+// ============================================================
+
+async function checkAuth() {
+  try {
+    const res = await fetch("/api/auth/me");
+    const data = await res.json();
+
+    if (data.authenticated && data.user) {
+      applyAuthState(data.user);
+    } else {
+      showLoginScreen();
+    }
+  } catch (err) {
+    showLoginScreen();
+  }
+}
+
+function showLoginScreen() {
+  state.authenticated = false;
+  state.currentUser = null;
+
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("authenticatedPortal").classList.add("hidden");
+  document.getElementById("authenticatedControls").classList.add("hidden");
+  initLucide();
+}
+
+async function applyAuthState(user) {
+  state.authenticated = true;
+  state.currentUser = user;
+
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("authenticatedPortal").classList.remove("hidden");
+  document.getElementById("authenticatedControls").classList.remove("hidden");
+
+  // Update top bar user info
+  document.getElementById("navUserName").innerText = user.name;
+  const roleBadge = document.getElementById("navRoleBadge");
+
+  if (user.role === "admin") {
+    roleBadge.innerText = "Admin";
+    roleBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-800 uppercase";
+    document.getElementById("industrySelectorWrap").classList.remove("hidden");
+
+    // Show Admin dashboard
+    document.getElementById("workerView").classList.add("hidden");
+    document.getElementById("employerView").classList.remove("hidden");
+
+    await loadStats();
+    await loadAttendance();
+    await loadGrievances();
+  } else {
+    // Worker logged in
+    roleBadge.innerText = "Worker";
+    roleBadge.className = "px-1.5 py-0.2 rounded text-[10px] font-bold bg-brand-100 text-brand-800 uppercase";
+    document.getElementById("industrySelectorWrap").classList.add("hidden");
+
+    // Set industry based on worker's assigned industry
+    state.industry = user.industry || "construction";
+    state.selectedWorkerId = user.worker_id;
+
+    // Show Worker Portal
+    document.getElementById("workerView").classList.remove("hidden");
+    document.getElementById("employerView").classList.add("hidden");
+
+    document.getElementById("currentWorkerName").innerText = user.name;
+    document.getElementById("currentWorkerRole").innerText = user.job_role;
+    document.getElementById("currentWorkerCode").innerText = user.worker_code;
+
+    await fetchWorkerPayslip();
+  }
+
+  initLucide();
+}
+
+function setLoginTab(tab) {
+  const workerTabBtn = document.getElementById("loginTabWorker");
+  const adminTabBtn = document.getElementById("loginTabAdmin");
+  const workerForm = document.getElementById("workerLoginForm");
+  const adminForm = document.getElementById("adminLoginForm");
+
+  if (tab === "worker") {
+    workerTabBtn.className = "py-2 rounded-lg bg-white text-slate-900 shadow-sm transition";
+    adminTabBtn.className = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition";
+    workerForm.classList.remove("hidden");
+    adminForm.classList.add("hidden");
+  } else {
+    adminTabBtn.className = "py-2 rounded-lg bg-white text-slate-900 shadow-sm transition";
+    workerTabBtn.className = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition";
+    adminForm.classList.remove("hidden");
+    workerForm.classList.add("hidden");
+  }
+}
+
+async function submitWorkerLogin(e) {
+  e.preventDefault();
+  const code = document.getElementById("workerCodeInput").value.trim().toUpperCase();
+  const pin = document.getElementById("workerPinInput").value.trim();
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "worker", worker_code: code, pin: pin })
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Sign-in error: " + data.error);
+      return;
+    }
+    applyAuthState(data.user);
+  } catch (err) {
+    alert("Login failed: " + err.message);
+  }
+}
+
+async function submitAdminLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById("adminUsernameInput").value.trim();
+  const password = document.getElementById("adminPasswordInput").value.trim();
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "admin", username: username, password: password })
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Sign-in error: " + data.error);
+      return;
+    }
+    applyAuthState(data.user);
+  } catch (err) {
+    alert("Admin login failed: " + err.message);
+  }
+}
+
+async function quickLogin(codeOrUser, role) {
+  if (role === "admin") {
+    document.getElementById("adminUsernameInput").value = "admin";
+    document.getElementById("adminPasswordInput").value = "fairshift2026";
+    setLoginTab("admin");
+    const fakeEvent = { preventDefault: () => {} };
+    await submitAdminLogin(fakeEvent);
+  } else {
+    document.getElementById("workerCodeInput").value = codeOrUser;
+    document.getElementById("workerPinInput").value = "1234";
+    setLoginTab("worker");
+    const fakeEvent = { preventDefault: () => {} };
+    await submitWorkerLogin(fakeEvent);
+  }
+}
+
+async function doLogout() {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+    showLoginScreen();
+  } catch (err) {
+    showLoginScreen();
+  }
 }
 
 // ============================================================
-// INDUSTRY & ROLE SWITCHING
+// INDUSTRY SWITCHING (ADMIN MODE)
 // ============================================================
 
 async function changeIndustry() {
@@ -56,74 +214,10 @@ async function changeIndustry() {
     desc.innerText = "Managing campus sanitation shifts, security rosters, laboratory hazard reports, and transparent hourly wages.";
   }
 
-  await refreshAll();
+  await loadStats();
+  await loadAttendance();
+  await loadGrievances();
   initLucide();
-}
-
-function switchRole(role) {
-  state.role = role;
-  const workerView = document.getElementById("workerView");
-  const employerView = document.getElementById("employerView");
-  const workerBtn = document.getElementById("roleWorkerBtn");
-  const employerBtn = document.getElementById("roleEmployerBtn");
-
-  if (role === "worker") {
-    workerView.classList.remove("hidden");
-    employerView.classList.add("hidden");
-    workerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-brand-600 text-white shadow-sm transition flex items-center space-x-1.5 focus:outline-none";
-    employerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5 focus:outline-none";
-  } else {
-    workerView.classList.add("hidden");
-    employerView.classList.remove("hidden");
-    employerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-md bg-brand-600 text-white shadow-sm transition flex items-center space-x-1.5 focus:outline-none";
-    workerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5 focus:outline-none";
-    loadStats();
-    loadAttendance();
-    loadGrievances();
-  }
-  initLucide();
-}
-
-// ============================================================
-// WORKER MANAGEMENT & IDENTITY
-// ============================================================
-
-async function loadWorkers() {
-  try {
-    const res = await fetch(`/api/workers?industry=${state.industry}`);
-    const data = await res.json();
-    state.workers = data;
-
-    const select = document.getElementById("workerSelector");
-    select.innerHTML = data.map(w => `<option value="${w.id}">${w.name} (${w.role})</option>`).join("");
-
-    if (data.length > 0) {
-      state.selectedWorkerId = data[0].id;
-      updateWorkerDisplay(data[0]);
-      await fetchWorkerPayslip();
-    }
-
-    document.getElementById("workerCountBadge").innerText = `${data.length} Active Workers`;
-  } catch (err) {
-    console.error("Failed to load workers:", err);
-  }
-}
-
-function onWorkerChange() {
-  const select = document.getElementById("workerSelector");
-  const workerId = parseInt(select.value);
-  state.selectedWorkerId = workerId;
-  const worker = state.workers.find(w => w.id === workerId);
-  if (worker) {
-    updateWorkerDisplay(worker);
-    fetchWorkerPayslip();
-  }
-}
-
-function updateWorkerDisplay(worker) {
-  document.getElementById("currentWorkerName").innerText = worker.name;
-  document.getElementById("currentWorkerRole").innerText = worker.role;
-  document.getElementById("currentWorkerCode").innerText = worker.worker_code;
 }
 
 // ============================================================
@@ -146,7 +240,7 @@ async function doCheckIn() {
     badge.innerText = "Shift In Progress (Clocked In)";
 
     alert(data.message || "Clocked in successfully!");
-    await refreshAll();
+    await fetchWorkerPayslip();
   } catch (err) {
     alert("Check-in failed: " + err.message);
   }
@@ -180,8 +274,6 @@ async function doCheckOut() {
     alert(`Clock-out recorded! Logged ${data.attendance.total_hours} hrs${otText}. Transparent payslip updated.`);
 
     await fetchWorkerPayslip();
-    await loadAttendance();
-    await loadStats();
   } catch (err) {
     alert("Check-out failed: " + err.message);
   }
@@ -214,7 +306,6 @@ async function fetchWorkerPayslip() {
     const data = await res.json();
     if (data.error) return;
 
-    // Update labels and values
     document.getElementById("lblBasePay").innerText = data.labels.base_pay + ":";
     document.getElementById("lblOvertimePay").innerText = data.labels.overtime_pay + ":";
     document.getElementById("lblDeductions").innerText = data.labels.deductions + ":";
@@ -227,7 +318,6 @@ async function fetchWorkerPayslip() {
 
     document.getElementById("valFormulaExplanation").innerText = data.formula_explanation;
 
-    // Fatigue status indicator
     const fatigueBox = document.getElementById("fatigueAlertBox");
     const fatigueText = document.getElementById("fatigueStatusText");
     fatigueText.innerText = data.fatigue_status;
@@ -281,8 +371,6 @@ async function submitGrievance(e) {
     document.getElementById("grievanceDescription").value = "";
     document.getElementById("trackCodeInput").value = data.ticket_code;
     trackTicket();
-    await loadGrievances();
-    await loadStats();
   } catch (err) {
     alert("Failed to submit grievance: " + err.message);
   }
@@ -417,7 +505,6 @@ async function loadGrievances() {
             <strong>Action Note:</strong> ${g.resolution_note}
           </div>
 
-          <!-- Employer Status Triage Action -->
           <div class="flex items-center justify-between pt-1 border-t border-slate-200 text-[11px]">
             <span class="text-slate-400">Logged: ${g.created_at || 'Recently'}</span>
             <div class="space-x-1">

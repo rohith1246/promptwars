@@ -6,14 +6,16 @@ Supports Neon Serverless PostgreSQL via DATABASE_URL with automatic fallback to 
 import os
 import random
 import string
+import logging
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey
+    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey, text
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, scoped_session
 
 load_dotenv()
+logger = logging.getLogger("fairshift.database")
 
 Base = declarative_base()
 
@@ -25,11 +27,9 @@ def get_database_uri() -> str:
     """
     uri = os.getenv("DATABASE_URL", "sqlite:///fairshift.db")
     
-    # Neon and Heroku provide postgres:// URLs, SQLAlchemy requires postgresql://
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 
-    # Check driver compatibility: if psycopg (v3) is not installed, use psycopg2 explicitly
     if uri.startswith("postgresql://") and not uri.startswith("postgresql+"):
         try:
             import psycopg  # noqa: F401
@@ -45,7 +45,7 @@ connect_args = {"check_same_thread": False} if database_uri.startswith("sqlite")
 engine = create_engine(
     database_uri,
     connect_args=connect_args,
-    pool_pre_ping=True,  # Drops stale serverless connections
+    pool_pre_ping=True,
     pool_recycle=300
 )
 
@@ -67,6 +67,7 @@ class Worker(Base):
     hourly_rate = Column(Float, nullable=False, default=75.0)  # in INR
     daily_shift_hours = Column(Float, nullable=False, default=8.0)
     overtime_multiplier = Column(Float, nullable=False, default=1.5)  # 1.5x for OT
+    pin = Column(String(32), nullable=False, default="1234")  # 4-digit PIN for deskless worker login
     created_at = Column(DateTime, default=datetime.utcnow)
 
     attendance_records = relationship("Attendance", back_populates="worker", cascade="all, delete-orphan")
@@ -119,20 +120,15 @@ class Attendance(Base):
 
 
 class Grievance(Base):
-    """
-    Zero-Knowledge Anonymous Grievance Model.
-    Notice: NO worker_id, NO IP address, NO user device metadata is stored.
-    Generates a secure alphanumeric tracking token (e.g. FS-84920) so the worker can track resolution.
-    """
     __tablename__ = "grievances"
 
     id = Column(Integer, primary_key=True)
     ticket_code = Column(String(32), unique=True, nullable=False, index=True)
     industry = Column(String(64), nullable=False, index=True)
-    category = Column(String(64), nullable=False)  # 'Safety Hazard', 'Wage Discrepancy', 'Harassment', 'Work Conditions'
-    urgency = Column(String(32), nullable=False, default="Medium")  # 'Low', 'Medium', 'Critical'
+    category = Column(String(64), nullable=False)
+    urgency = Column(String(32), nullable=False, default="Medium")
     description = Column(Text, nullable=False)
-    status = Column(String(32), default="Open")  # 'Open' | 'Under Investigation' | 'Resolved'
+    status = Column(String(32), default="Open")
     resolution_note = Column(Text, default="Your report has been logged and queued for administrative review.")
     created_at = Column(DateTime, default=datetime.utcnow)
     resolved_at = Column(DateTime, nullable=True)
@@ -152,40 +148,39 @@ class Grievance(Base):
         }
 
 
-# ============================================================
-# HELPER FUNCTIONS & SEED DATA
-# ============================================================
-
 def generate_ticket_code() -> str:
-    """Generate a high-entropy collision-resistant anonymous ticket code."""
     num_part = "".join(random.choices(string.digits, k=5))
     return f"FS-{num_part}"
 
 
 def init_db():
-    """Create all tables and seed sample data for Construction and College industries."""
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-migrate schema updates for Neon PostgreSQL
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS pin VARCHAR(64) DEFAULT '1234';"))
+            conn.execute(text("UPDATE workers SET pin = '1234' WHERE pin IS NULL;"))
+    except Exception as e:
+        logger.warning(f"Schema migration notice: {e}")
+
     session = db_session()
 
-    # Only seed if workers table is empty
     if session.query(Worker).count() == 0:
         seed_workers = [
-            # Construction Industry: Skyline Infrastructure
-            Worker(worker_code="CN-101", name="Ramesh Kumar", industry="construction", role="Master Mason", hourly_rate=95.0),
-            Worker(worker_code="CN-102", name="Deepak Verma", industry="construction", role="Scaffolding Technician", hourly_rate=85.0),
-            Worker(worker_code="CN-103", name="Suresh Yadav", industry="construction", role="Structural Welder", hourly_rate=110.0),
-            Worker(worker_code="CN-104", name="Arun Singh", industry="construction", role="Site General Labor", hourly_rate=65.0),
+            Worker(worker_code="CN-101", name="Ramesh Kumar", industry="construction", role="Master Mason", hourly_rate=95.0, pin="1234"),
+            Worker(worker_code="CN-102", name="Deepak Verma", industry="construction", role="Scaffolding Technician", hourly_rate=85.0, pin="1234"),
+            Worker(worker_code="CN-103", name="Suresh Yadav", industry="construction", role="Structural Welder", hourly_rate=110.0, pin="1234"),
+            Worker(worker_code="CN-104", name="Arun Singh", industry="construction", role="Site General Labor", hourly_rate=65.0, pin="1234"),
 
-            # College / Campus Operations: SRM University Campus Operations
-            Worker(worker_code="CL-201", name="Lakshmi Narayanan", industry="college", role="Campus Sanitation Lead", hourly_rate=75.0),
-            Worker(worker_code="CL-202", name="K. Murugan", industry="college", role="Senior Security Guard", hourly_rate=80.0),
-            Worker(worker_code="CL-203", name="Priya Selvam", industry="college", role="Laboratory Assistant", hourly_rate=90.0),
-            Worker(worker_code="CL-204", name="Anand Raj", industry="college", role="Campus Shuttle Driver", hourly_rate=85.0),
+            Worker(worker_code="CL-201", name="Lakshmi Narayanan", industry="college", role="Campus Sanitation Lead", hourly_rate=75.0, pin="1234"),
+            Worker(worker_code="CL-202", name="K. Murugan", industry="college", role="Senior Security Guard", hourly_rate=80.0, pin="1234"),
+            Worker(worker_code="CL-203", name="Priya Selvam", industry="college", role="Laboratory Assistant", hourly_rate=90.0, pin="1234"),
+            Worker(worker_code="CL-204", name="Anand Raj", industry="college", role="Campus Shuttle Driver", hourly_rate=85.0, pin="1234"),
         ]
         session.add_all(seed_workers)
         session.commit()
 
-        # Seed sample historical attendance for transparency & fatigue demo
         today = date.today()
         workers = session.query(Worker).all()
 
@@ -194,7 +189,7 @@ def init_db():
                 hist_date = today - timedelta(days=day_offset)
                 if w.worker_code in ["CN-102", "CL-202"]:
                     reg_h = 8.0
-                    ot_h = 3.5  # Heavy overtime -> Fatigue alert
+                    ot_h = 3.5
                 else:
                     reg_h = 8.0
                     ot_h = 1.0 if day_offset % 2 == 0 else 0.0
@@ -212,7 +207,6 @@ def init_db():
                 )
                 session.add(att)
 
-        # Seed realistic grievances for both industries
         seed_grievances = [
             Grievance(
                 ticket_code="FS-10492",

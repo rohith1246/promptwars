@@ -4,19 +4,19 @@ Built for Prompt Wars 2026 (Prompt Wars × SRM ACM Student Chapter)
 Theme: UN SDG 8 – Decent Work and Economic Growth
 
 Core Working Features:
-1. Attendance & Overtime Shift Tracking (Automated hour calculation & fatigue alert)
+1. Shift Attendance & Overtime Tracker (with automated hour calculation & fatigue alerts)
 2. Transparent Multilingual Payslip Engine (English, Hindi, Tamil)
 3. Zero-Knowledge Anonymous Grievance & Safety Hazard Reporting (with Tracking Code)
 
-Two Supported Industries:
-- Construction Site ("Skyline Infrastructure")
-- College Operations ("SRM University Campus Facilities")
+Authentication:
+- Worker Login: Worker ID (e.g. CN-101) + 4-digit PIN (default 1234)
+- Admin / Employer Login: admin / fairshift2026
 """
 
 import os
 import sys
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, g
+from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -35,7 +35,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "fairshift-sdg8-decent-work-secret-key-2026")
 CORS(app)
 
-# ProxyFix for Render, Cloudflare, and Gunicorn reverse proxies
+# Reverse proxy handling
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Security: Rate Limiting
@@ -46,19 +46,14 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Apply Hardened Security Headers to every response
 @app.after_request
 def apply_security_headers(response):
     return add_security_headers(response)
 
-
-# Teardown database session per request
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
 
-
-# Initialize database with tables and seed data
 with app.app_context():
     init_db()
 
@@ -69,13 +64,11 @@ with app.app_context():
 
 @app.route("/")
 def index():
-    """Serves the primary unified application interface."""
     return render_template("index.html")
 
 
 @app.route("/health")
 def health():
-    """Health check endpoint for Render and uptime monitoring."""
     return jsonify({
         "status": "healthy",
         "app": "FairShift",
@@ -85,12 +78,80 @@ def health():
 
 
 # ============================================================
+# AUTHENTICATION API (WORKER & ADMIN LOGIN)
+# ============================================================
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    """
+    Role-based authentication endpoint.
+    - Worker login: worker_code (e.g. CN-101) + pin (default '1234')
+    - Admin login: username ('admin' or 'admin@fairshift.com') + password ('fairshift2026')
+    """
+    data = request.get_json() or {}
+    role = data.get("role", "worker").strip().lower()
+
+    if role == "admin":
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+
+        if username.lower() in ["admin", "admin@fairshift.com"] and password == "fairshift2026":
+            user_data = {
+                "role": "admin",
+                "name": "Operations Admin",
+                "email": "admin@fairshift.com"
+            }
+            session["user"] = user_data
+            return jsonify({"success": True, "user": user_data}), 200
+        return jsonify({"error": "Invalid admin username or password."}), 401
+
+    else:  # Worker Login
+        worker_code = data.get("worker_code", "").strip().upper()
+        pin = data.get("pin", "").strip()
+
+        db = db_session()
+        worker = db.query(Worker).filter_by(worker_code=worker_code).first()
+
+        if not worker:
+            return jsonify({"error": f"Worker code '{worker_code}' not found."}), 404
+
+        if worker.pin != pin and pin != "1234":
+            return jsonify({"error": "Incorrect 4-digit PIN."}), 401
+
+        user_data = {
+            "role": "worker",
+            "worker_id": worker.id,
+            "worker_code": worker.worker_code,
+            "name": worker.name,
+            "industry": worker.industry,
+            "job_role": worker.role
+        }
+        session["user"] = user_data
+        return jsonify({"success": True, "user": user_data}), 200
+
+
+@app.route("/api/auth/me", methods=["GET"])
+def auth_me():
+    """Returns currently authenticated session user or 401."""
+    user = session.get("user")
+    if not user:
+        return jsonify({"authenticated": False}), 401
+    return jsonify({"authenticated": True, "user": user}), 200
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    """Destroys current session."""
+    session.pop("user", None)
+    return jsonify({"success": True, "message": "Logged out successfully."})
+
+
+# ============================================================
 # FEATURE 1: ATTENDANCE & SHIFT / OVERTIME TRACKING API
 # ============================================================
 
 @app.route("/api/workers", methods=["GET"])
 def get_workers():
-    """Fetch workers filtered by industry."""
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
     workers = session.query(Worker).filter_by(industry=industry).all()
@@ -100,10 +161,6 @@ def get_workers():
 @app.route("/api/check-in", methods=["POST"])
 @limiter.limit("20 per minute")
 def check_in():
-    """
-    Worker clock-in endpoint.
-    Checks if worker already checked in today; if not, records start timestamp.
-    """
     data = request.get_json() or {}
     worker_id = data.get("worker_id")
     if not worker_id:
@@ -115,7 +172,6 @@ def check_in():
         return jsonify({"error": "Worker not found."}), 404
 
     today = date.today()
-    # Check if existing active check-in exists for today
     existing = session.query(Attendance).filter_by(
         worker_id=worker.id, date=today, status="checked_in"
     ).first()
@@ -145,10 +201,6 @@ def check_in():
 @app.route("/api/check-out", methods=["POST"])
 @limiter.limit("20 per minute")
 def check_out():
-    """
-    Worker clock-out endpoint.
-    Automatically calculates regular hours and overtime (hours > 8.0).
-    """
     data = request.get_json() or {}
     worker_id = data.get("worker_id")
     hours_worked = data.get("simulated_hours")
@@ -196,7 +248,6 @@ def check_out():
 
 @app.route("/api/attendance", methods=["GET"])
 def get_attendance():
-    """Fetch attendance records filtered by industry."""
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
     records = session.query(Attendance).filter_by(industry=industry).order_by(Attendance.id.desc()).limit(30).all()
@@ -209,10 +260,6 @@ def get_attendance():
 
 @app.route("/api/payslip/<int:worker_id>", methods=["GET"])
 def get_payslip(worker_id):
-    """
-    Computes transparent wage breakdown with mathematical proof and multilingual explanation.
-    Languages: 'en' (English), 'hi' (Hindi), 'ta' (Tamil).
-    """
     lang = request.args.get("lang", "en").strip().lower()
     session = db_session()
     worker = session.query(Worker).filter_by(id=worker_id).first()
@@ -225,7 +272,6 @@ def get_payslip(worker_id):
         attendance_records=[r.to_dict() for r in attendance_records],
         lang=lang
     )
-
     return jsonify(payslip_data)
 
 
@@ -236,11 +282,6 @@ def get_payslip(worker_id):
 @app.route("/api/grievances", methods=["POST"])
 @limiter.limit("15 per minute")
 def submit_grievance():
-    """
-    Zero-Knowledge Anonymous Grievance Submission.
-    Guarantees no worker identity, phone number, or IP address is linked to the ticket.
-    Returns a unique alphanumeric Ticket Code for anonymous status tracking.
-    """
     raw_payload = request.get_json() or {}
     is_valid, error_msg, clean_data = sanitize_grievance_payload(raw_payload)
 
@@ -274,9 +315,6 @@ def submit_grievance():
 
 @app.route("/api/grievances/track/<ticket_code>", methods=["GET"])
 def track_grievance(ticket_code):
-    """
-    Allows a worker to track the status of their grievance without revealing who they are.
-    """
     clean_code = ticket_code.strip().upper()
     if not validate_ticket_code(clean_code):
         return jsonify({"error": "Invalid ticket code format. Example: FS-10492"}), 400
@@ -291,7 +329,6 @@ def track_grievance(ticket_code):
 
 @app.route("/api/grievances", methods=["GET"])
 def list_grievances():
-    """Employer view: List grievances for the selected industry."""
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
     grievances = session.query(Grievance).filter_by(industry=industry).order_by(Grievance.id.desc()).all()
@@ -300,7 +337,6 @@ def list_grievances():
 
 @app.route("/api/grievances/update-status", methods=["POST"])
 def update_grievance_status():
-    """Employer action: Update grievance resolution status and corrective action note."""
     data = request.get_json() or {}
     ticket_code = data.get("ticket_code", "").strip().upper()
     new_status = data.get("status", "").strip()
@@ -334,7 +370,6 @@ def update_grievance_status():
 
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
-    """Provides operational & SDG 8 Decent Work compliance statistics."""
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
 

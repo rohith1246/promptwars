@@ -1,7 +1,8 @@
 """
-FairShift - Comprehensive Automated Test Suite
+FairShift - Comprehensive Automated Test Suite with Authentication
 Prompt Wars 2026 × SRM ACM Student Chapter
 Validates:
+- Authentication & Role-Based Access Control (Worker & Admin logins)
 - Feature 1: Attendance & Shift Tracking (Normal hours, Overtime calculation)
 - Feature 2: Transparent Multilingual Payslip (English, Hindi, Tamil)
 - Feature 3: Anonymous Grievance & Safety Hazard Reporting (Zero-Knowledge tracking)
@@ -30,19 +31,74 @@ class FairShiftTestSuite(unittest.TestCase):
         db_session.remove()
 
     # ============================================================
+    # AUTHENTICATION & ROLE-BASED ACCESS CONTROL TESTS
+    # ============================================================
+
+    def test_00_worker_login_success(self):
+        """Verify worker login with worker_code and 4-digit PIN."""
+        res = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": "CN-101",
+            "pin": "1234"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["user"]["worker_code"], "CN-101")
+        self.assertEqual(data["user"]["role"], "worker")
+
+        # Verify /api/auth/me returns current session
+        res_me = self.client.get("/api/auth/me")
+        self.assertEqual(res_me.status_code, 200)
+        self.assertTrue(json.loads(res_me.data)["authenticated"])
+
+    def test_00_admin_login_and_logout(self):
+        """Verify admin login with username/password and logout session destruction."""
+        res = self.client.post("/api/auth/login", json={
+            "role": "admin",
+            "username": "admin",
+            "password": "fairshift2026"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertEqual(data["user"]["role"], "admin")
+
+        # Logout
+        res_logout = self.client.post("/api/auth/logout")
+        self.assertEqual(res_logout.status_code, 200)
+
+        # /api/auth/me should now return 401
+        res_me = self.client.get("/api/auth/me")
+        self.assertEqual(res_me.status_code, 401)
+
+    def test_00_invalid_login_rejection(self):
+        """Verify invalid worker credentials are rejected."""
+        res = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": "NON-EXISTENT",
+            "pin": "0000"
+        })
+        self.assertEqual(res.status_code, 404)
+
+        res_bad_pin = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": "CN-101",
+            "pin": "9999"
+        })
+        self.assertEqual(res_bad_pin.status_code, 401)
+
+    # ============================================================
     # FEATURE 1: ATTENDANCE & SHIFT / OVERTIME TRACKING TESTS
     # ============================================================
 
     def test_01_get_workers_by_industry(self):
         """Verify distinct worker rosters for Construction vs College industries."""
-        # Construction
         res_cn = self.client.get("/api/workers?industry=construction")
         self.assertEqual(res_cn.status_code, 200)
         workers_cn = json.loads(res_cn.data)
         self.assertTrue(len(workers_cn) >= 4)
         self.assertTrue(any("Mason" in w["role"] for w in workers_cn))
 
-        # College
         res_cl = self.client.get("/api/workers?industry=college")
         self.assertEqual(res_cl.status_code, 200)
         workers_cl = json.loads(res_cl.data)
@@ -56,14 +112,12 @@ class FairShiftTestSuite(unittest.TestCase):
         data = json.loads(res.data)
         self.assertIn("attendance", data)
 
-        # Attempt immediate duplicate check-in
         res_dup = self.client.post("/api/check-in", json={"worker_id": 1})
         self.assertEqual(res_dup.status_code, 200)
         self.assertIn("already checked in", json.loads(res_dup.data)["message"].lower())
 
     def test_03_automated_overtime_calculation_on_checkout(self):
         """Verify standard 8h shift splits overtime automatically (>8.0 hrs)."""
-        # Clock out with simulated 11 hours (8h standard + 3h overtime)
         res = self.client.post("/api/check-out", json={
             "worker_id": 1,
             "simulated_hours": 11.0
@@ -85,7 +139,6 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         data = json.loads(res.data)
 
-        # Mathematical verification
         expected_base = round(data["total_regular_hours"] * data["hourly_rate"], 2)
         expected_ot_rate = round(data["hourly_rate"] * 1.5, 2)
         expected_ot = round(data["total_overtime_hours"] * expected_ot_rate, 2)
@@ -102,13 +155,11 @@ class FairShiftTestSuite(unittest.TestCase):
 
     def test_05_multilingual_payslip_translations(self):
         """Verify payslip translations for Hindi (hi) and Tamil (ta)."""
-        # Hindi
         res_hi = self.client.get("/api/payslip/1?lang=hi")
         self.assertEqual(res_hi.status_code, 200)
         data_hi = json.loads(res_hi.data)
         self.assertIn("पारदर्शी वेतन विवरण", data_hi["labels"]["title"])
 
-        # Tamil
         res_ta = self.client.get("/api/payslip/1?lang=ta")
         self.assertEqual(res_ta.status_code, 200)
         data_ta = json.loads(res_ta.data)
@@ -116,7 +167,6 @@ class FairShiftTestSuite(unittest.TestCase):
 
     def test_06_fatigue_alert_guardrail_detection(self):
         """Verify fatigue alert triggers when total hours exceed 48 hours weekly cap."""
-        # Worker 2 was seeded with 5 days of 11.5 hours = 57.5 hours (>48 limit)
         res = self.client.get("/api/payslip/2?lang=en")
         self.assertEqual(res.status_code, 200)
         data = json.loads(res.data)
@@ -142,7 +192,6 @@ class FairShiftTestSuite(unittest.TestCase):
         ticket_code = data["ticket_code"]
         self.assertTrue(ticket_code.startswith("FS-"))
 
-        # Verify tracking works with generated ticket code
         res_track = self.client.get(f"/api/grievances/track/{ticket_code}")
         self.assertEqual(res_track.status_code, 200)
         grievance_data = json.loads(res_track.data)
@@ -151,7 +200,6 @@ class FairShiftTestSuite(unittest.TestCase):
 
     def test_08_employer_grievance_triage_update(self):
         """Verify employer can triage and resolve an anonymous grievance."""
-        # Submit a ticket
         res = self.client.post("/api/grievances", json={
             "industry": "college",
             "category": "Work Conditions",
@@ -160,7 +208,6 @@ class FairShiftTestSuite(unittest.TestCase):
         })
         code = json.loads(res.data)["ticket_code"]
 
-        # Employer marks Under Investigation
         res_update = self.client.post("/api/grievances/update-status", json={
             "ticket_code": code,
             "status": "Under Investigation",
@@ -168,7 +215,6 @@ class FairShiftTestSuite(unittest.TestCase):
         })
         self.assertEqual(res_update.status_code, 200)
 
-        # Worker tracks ticket again anonymously to see update
         res_check = self.client.get(f"/api/grievances/track/{code}")
         tracked = json.loads(res_check.data)
         self.assertEqual(tracked["status"], "Under Investigation")
@@ -199,7 +245,6 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         code = json.loads(res.data)["ticket_code"]
 
-        # Read back sanitized grievance
         res_track = self.client.get(f"/api/grievances/track/{code}")
         data = json.loads(res_track.data)
         self.assertNotIn("<script>", data["description"])
