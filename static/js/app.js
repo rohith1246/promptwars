@@ -57,6 +57,9 @@ function showLoginScreen() {
   state.authenticated = false;
   state.currentUser = null;
 
+  const overview = document.getElementById("overviewSection");
+  if (overview) overview.classList.remove("hidden");
+
   document.getElementById("loginScreen").classList.remove("hidden");
   document.getElementById("authenticatedPortal").classList.add("hidden");
   document.getElementById("authenticatedControls").classList.add("hidden");
@@ -66,6 +69,9 @@ function showLoginScreen() {
 async function applyAuthState(user) {
   state.authenticated = true;
   state.currentUser = user;
+
+  const overview = document.getElementById("overviewSection");
+  if (overview) overview.classList.add("hidden");
 
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("authenticatedPortal").classList.remove("hidden");
@@ -109,6 +115,75 @@ async function applyAuthState(user) {
   }
 
   initLucide();
+}
+
+function setAuthTab(tab) {
+  const tabDemo = document.getElementById("authTabDemo");
+  const tabSignup = document.getElementById("authTabSignup");
+  const tabManual = document.getElementById("authTabManual");
+
+  const secDemo = document.getElementById("authDemoSection");
+  const secSignup = document.getElementById("workerSignupForm");
+  const secManual = document.getElementById("authManualSection");
+
+  const activeClass = "py-2 rounded-lg bg-white text-slate-900 shadow-sm transition font-bold";
+  const inactiveClass = "py-2 rounded-lg text-slate-500 hover:text-slate-900 transition font-bold";
+
+  if (tabDemo) tabDemo.className = inactiveClass;
+  if (tabSignup) tabSignup.className = inactiveClass;
+  if (tabManual) tabManual.className = inactiveClass;
+
+  if (secDemo) secDemo.classList.add("hidden");
+  if (secSignup) secSignup.classList.add("hidden");
+  if (secManual) secManual.classList.add("hidden");
+
+  if (tab === "demo" && tabDemo && secDemo) {
+    tabDemo.className = activeClass;
+    secDemo.classList.remove("hidden");
+  } else if (tab === "signup" && tabSignup && secSignup) {
+    tabSignup.className = activeClass;
+    secSignup.classList.remove("hidden");
+  } else if (tabManual && secManual) {
+    tabManual.className = activeClass;
+    secManual.classList.remove("hidden");
+  }
+  initLucide();
+}
+
+async function submitWorkerSignup(e) {
+  e.preventDefault();
+  const name = document.getElementById("signupName").value.trim();
+  const industry = document.getElementById("signupIndustry").value;
+  const role = document.getElementById("signupRole").value.trim();
+  const rate = parseFloat(document.getElementById("signupRate").value) || 80.0;
+  const pin = document.getElementById("signupPin").value.trim();
+  const btn = document.getElementById("signupSubmitBtn");
+
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="inline-flex items-center text-xs">⏳ Creating Account...</span>`;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, industry, role, hourly_rate: rate, pin })
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Registration error: " + data.error);
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+      return;
+    }
+
+    alert(`🎉 Account Created Successfully!\nYour Assigned Worker ID: ${data.worker_code}\nPIN: ${pin}\n\nProceeding to your personal portal...`);
+    applyAuthState(data.user);
+  } catch (err) {
+    alert("Connection error: " + err.message);
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+  }
 }
 
 function setLoginTab(tab) {
@@ -604,5 +679,151 @@ async function updateGrievance(ticketCode, status) {
     await loadStats();
   } catch (err) {
     alert("Failed to update status: " + err.message);
+  }
+}
+
+// ============================================================
+// GEMINI AI ASSISTANT CHATBOT LOGIC
+// ============================================================
+
+let aiChatInitialized = false;
+
+function toggleAiChat() {
+  const drawer = document.getElementById("aiChatDrawer");
+  if (!drawer) return;
+
+  if (drawer.classList.contains("hidden")) {
+    drawer.classList.remove("hidden");
+    if (!aiChatInitialized) {
+      initAiChat();
+    }
+    const input = document.getElementById("aiChatInput");
+    if (input) input.focus();
+  } else {
+    drawer.classList.add("hidden");
+  }
+  initLucide();
+}
+
+function toggleApiKeyInput() {
+  const box = document.getElementById("aiApiKeyBox");
+  if (box) box.classList.toggle("hidden");
+}
+
+function saveGeminiApiKey() {
+  const input = document.getElementById("geminiApiKeyInput");
+  const key = input ? input.value.trim() : "";
+  if (key) {
+    localStorage.setItem("fairshift_gemini_key", key);
+    alert("Gemini API Key saved locally in your browser!");
+  } else {
+    localStorage.removeItem("fairshift_gemini_key");
+    alert("Gemini API Key cleared. FairShift will use built-in labor knowledge engine.");
+  }
+  toggleApiKeyInput();
+}
+
+function initAiChat() {
+  aiChatInitialized = true;
+  const savedKey = localStorage.getItem("fairshift_gemini_key");
+  if (savedKey) {
+    const keyInput = document.getElementById("geminiApiKeyInput");
+    if (keyInput) keyInput.value = savedKey;
+  }
+
+  appendAiMessage("bot", 
+    "**Hello! I am FairShift AI — your Decent Work & Labor Rights Assistant.**\n\n" +
+    "I can help explain overtime pay (1.5× formula), 48-hour fatigue guardrails, anonymous reporting, and transparent payslips under UN SDG 8.\n\n" +
+    "How can I assist you today?"
+  );
+}
+
+function appendAiMessage(sender, text) {
+  const container = document.getElementById("aiChatMessages");
+  if (!container) return;
+
+  const msgDiv = document.createElement("div");
+  msgDiv.className = sender === "user" ? "flex justify-end" : "flex justify-start";
+
+  // Clean formatted text parser
+  let formatted = text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code class='bg-slate-200 px-1 py-0.5 rounded text-[11px] font-mono text-slate-900'>$1</code>")
+    .replace(/\n\n/g, "<br><br>")
+    .replace(/\n/g, "<br>");
+
+  const bubble = document.createElement("div");
+  if (sender === "user") {
+    bubble.className = "max-w-[85%] bg-indigo-600 text-white rounded-2xl rounded-tr-none px-3.5 py-2.5 text-xs shadow-sm leading-relaxed";
+  } else {
+    bubble.className = "max-w-[85%] bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none px-3.5 py-2.5 text-xs shadow-sm leading-relaxed";
+  }
+  bubble.innerHTML = formatted;
+  msgDiv.appendChild(bubble);
+  container.appendChild(msgDiv);
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendQuickPrompt(promptText) {
+  const input = document.getElementById("aiChatInput");
+  if (input) {
+    input.value = promptText;
+    const fakeEvent = { preventDefault: () => {} };
+    submitAiChat(fakeEvent);
+  }
+}
+
+async function submitAiChat(e) {
+  e.preventDefault();
+  const input = document.getElementById("aiChatInput");
+  const message = input.value.trim();
+  if (!message) return;
+
+  appendAiMessage("user", message);
+  input.value = "";
+
+  const sendBtn = document.getElementById("aiSendBtn");
+  if (sendBtn) sendBtn.disabled = true;
+
+  // Typing indicator
+  const container = document.getElementById("aiChatMessages");
+  const typingDiv = document.createElement("div");
+  typingDiv.id = "aiTypingIndicator";
+  typingDiv.className = "flex justify-start";
+  typingDiv.innerHTML = `
+    <div class="bg-white border border-slate-200 text-slate-400 rounded-2xl rounded-tl-none px-3 py-2 text-xs flex items-center space-x-1 shadow-sm">
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </div>
+  `;
+  container.appendChild(typingDiv);
+  container.scrollTop = container.scrollHeight;
+
+  const savedKey = localStorage.getItem("fairshift_gemini_key") || "";
+
+  try {
+    const res = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: message, api_key: savedKey })
+    });
+    const data = await res.json();
+    
+    const indicator = document.getElementById("aiTypingIndicator");
+    if (indicator) indicator.remove();
+
+    if (data.reply) {
+      appendAiMessage("bot", data.reply);
+    } else {
+      appendAiMessage("bot", "I am currently unable to process your request. Please try asking again in a moment.");
+    }
+  } catch (err) {
+    const indicator = document.getElementById("aiTypingIndicator");
+    if (indicator) indicator.remove();
+    appendAiMessage("bot", "Error connecting to AI service. Please check your network connection.");
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
   }
 }

@@ -48,38 +48,57 @@
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 class="font-extrabold text-lg tracking-tight text-slate-900">FairShift</h1>
+            <a href="#overviewSection" class="font-extrabold text-lg tracking-tight text-slate-900 hover:text-emerald-700 transition">FairShift</a>
             <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">SDG 8: Decent Work</span>
           </div>
           <p class="text-xs text-slate-500 hidden sm:block">Prompt Wars 2026 × SRM ACM Student Chapter</p>
         </div>
       </div>
 
-      <!-- Controls: Shown only when Logged In -->
-      <div id="authenticatedControls" class="hidden flex items-center space-x-2 sm:space-x-3">
+      <!-- Navigation Links (When Browsing) -->
+      <nav class="hidden md:flex items-center space-x-6 text-xs font-bold text-slate-600" aria-label="Main Navigation">
+        <a href="#overviewSection" class="hover:text-emerald-700 transition">Overview</a>
+        <a href="#featuresSection" class="hover:text-emerald-700 transition">3 Core Features</a>
+        <a href="#sectorsSection" class="hover:text-emerald-700 transition">Sectors</a>
+        <a href="#loginScreen" class="hover:text-emerald-700 transition">Portal / Sign In</a>
+      </nav>
+
+      <!-- Right Header Actions -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
         
-        <!-- Industry Selector (Visible to Admin or for sector switching) -->
-        <div id="industrySelectorWrap" class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200 text-xs">
-          <label for="industrySelect" class="sr-only">Choose Industry</label>
-          <span class="text-slate-500 font-semibold px-2 hidden md:inline">Sector:</span>
-          <select id="industrySelect" onchange="changeIndustry()" class="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
-            <option value="construction">🏗️ Construction (Skyline Infra)</option>
-            <option value="college">🎓 College (SRM Campus Ops)</option>
-          </select>
-        </div>
-
-        <!-- Role Badge & User Name -->
-        <div class="flex items-center space-x-2 bg-slate-100 py-1 px-3 rounded-lg border border-slate-200 text-xs">
-          <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i>
-          <span id="navUserName" class="font-bold text-slate-900">User</span>
-          <span id="navRoleBadge" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-brand-100 text-brand-800 uppercase">Worker</span>
-        </div>
-
-        <!-- Logout Button -->
-        <button onclick="doLogout()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center space-x-1 focus:outline-none">
-          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Sign Out</span>
+        <!-- Gemini AI Assistant Trigger Button -->
+        <button onclick="toggleAiChat()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition flex items-center space-x-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Open FairShift AI Chatbot">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-600" aria-hidden="true"></i>
+          <span>Ask Gemini AI</span>
         </button>
+
+        <!-- Controls: Shown only when Logged In -->
+        <div id="authenticatedControls" class="hidden flex items-center space-x-2 sm:space-x-3">
+          
+          <!-- Industry Selector (Visible to Admin or for sector switching) -->
+          <div id="industrySelectorWrap" class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200 text-xs">
+            <label for="industrySelect" class="sr-only">Choose Industry</label>
+            <span class="text-slate-500 font-semibold px-2 hidden md:inline">Sector:</span>
+            <select id="industrySelect" onchange="changeIndustry()" class="bg-white border border-slate-300 rounded-md px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
+              <option value="construction">🏗️ Construction (Skyline Infra)</option>
+              <option value="college">🎓 College (SRM Campus Ops)</option>
+            </select>
+          </div>
+
+          <!-- Role Badge & User Name -->
+          <div class="flex items-center space-x-2 bg-slate-100 py-1 px-3 rounded-lg border border-slate-200 text-xs">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500" aria-hidden="true"></i>
+            <span id="navUserName" class="font-bold text-slate-900">User</span>
+            <span id="navRoleBadge" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-brand-100 text-brand-800 uppercase">Worker</span>
+          </div>
+
+          <!-- Logout Button -->
+          <button onclick="doLogout()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center space-x-1 focus:outline-none">
+            <i data-lucide="log-out" class="w-3.5 h-3.5" aria-hidden="true"></i>
+            <span class="hidden sm:inline">Sign Out</span>
+          </button>
+
+        </div>
 
       </div>
 
@@ -90,6 +109,154 @@
   <main id="mainContent" role="main" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- ======================================================== -->
+    <!-- HERO & FEATURES OVERVIEW (PUBLIC HOME PAGE)              -->
+    <!-- ======================================================== -->
+    <section id="overviewSection" class="space-y-12 pb-4">
+      
+      <!-- HERO BANNER -->
+      <div class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl">
+        <div class="relative z-10 max-w-3xl space-y-4">
+          <div class="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold tracking-wide">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>UN SDG 8 • Decent Work & Economic Growth</span>
+          </div>
+          <h2 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+            FairShift: The Decent Work Platform for Employee-Intensive Organisations
+          </h2>
+          <p class="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
+            Millions of frontline, deskless workers across construction sites and university operations face paper registers, WhatsApp roster chaos, and wage opacity. 
+            FairShift establishes an auditable, transparent shift tracking system with automated overtime math, trilingual payslips, and zero-knowledge safety reporting.
+          </p>
+          <div class="flex flex-wrap items-center gap-3 pt-3">
+            <a href="#loginScreen" class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition shadow-lg flex items-center space-x-2">
+              <span>Launch Workforce Portal</span>
+              <span>↓</span>
+            </a>
+            <button onclick="setAuthTab('signup'); document.getElementById('loginScreen').scrollIntoView({behavior: 'smooth'})" class="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition flex items-center space-x-2">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              <span>Register Worker Account</span>
+            </button>
+            <button onclick="toggleAiChat()" class="px-5 py-3 rounded-xl bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold text-xs border border-indigo-400/40 transition flex items-center space-x-2">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Ask FairShift Gemini AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Key Stat Badges -->
+        <div class="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span class="block text-xl font-black text-emerald-400">1.5×</span>
+            <span class="text-[11px] text-slate-300 font-medium">Automated Overtime Rate</span>
+          </div>
+          <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span class="block text-xl font-black text-amber-400">&gt;48 hrs</span>
+            <span class="text-[11px] text-slate-300 font-medium">Fatigue Safety Guardrail</span>
+          </div>
+          <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span class="block text-xl font-black text-teal-400">100%</span>
+            <span class="text-[11px] text-slate-300 font-medium">Zero-Knowledge Privacy</span>
+          </div>
+          <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <span class="block text-xl font-black text-indigo-400">4 Langs</span>
+            <span class="text-[11px] text-slate-300 font-medium">EN, HI, TA, TE Payslips</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 CORE FEATURES DETAILED BREAKDOWN -->
+      <div id="featuresSection" class="space-y-6">
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="text-xs font-bold text-brand-600 uppercase tracking-widest">Built to Perfection • Zero Fluff</span>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900">3 Core Working Features (UN SDG 8 Aligned)</h3>
+          <p class="text-xs text-slate-500">Every feature is designed specifically for deskless frontline workers and supervisors to eliminate wage theft and workplace safety hazards.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Feature 1 Card -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:border-emerald-300 transition space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <h4 class="text-base font-bold text-slate-900">1. Shift Attendance & Overtime Tracker</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              1-Click QR check-in simulates on-site scanning. Distinguishes standard 8.0-hour duty from extra duty, automatically computing statutory 1.5× overtime pay.
+            </p>
+            <div class="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-100 text-[11px] text-emerald-900 font-medium">
+              ⚡ <strong>Fatigue Guardrail:</strong> Exceeding 48 hours weekly triggers warning badges on both worker slips and admin rosters.
+            </div>
+          </div>
+
+          <!-- Feature 2 Card -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:border-indigo-300 transition space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+              <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+            <h4 class="text-base font-bold text-slate-900">2. Transparent Multilingual Payslip</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Clear mathematical wage formula eliminating pay disputes before pay day. Displays gross pay, statutory 5% PF/ESI deductions, and net take-home pay.
+            </p>
+            <div class="p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 font-medium">
+              🌐 <strong>4 Languages:</strong> Instant localized translations in English, Hindi (हिन्दी), Tamil (தமிழ்), and Telugu (తెలుగు).
+            </div>
+          </div>
+
+          <!-- Feature 3 Card -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:border-rose-300 transition space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <h4 class="text-base font-bold text-slate-900">3. Zero-Knowledge Anonymous Reporting</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Frontline workers can report hazardous conditions (faulty scaffolding, exposed wires) or wage discrepancies without fear of termination or retaliation.
+            </p>
+            <div class="p-2.5 bg-rose-50/60 rounded-xl border border-rose-100 text-[11px] text-rose-900 font-medium">
+              🔒 <strong>Cryptographic Tickets:</strong> Worker identity and IP are stripped. Status tracked solely via unique <code>FS-XXXXX</code> codes.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SUPPORTED SECTORS SECTION -->
+      <div id="sectorsSection" class="bg-slate-100/70 rounded-3xl p-6 sm:p-8 border border-slate-200 space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900">Tested Across 2 Real-World Industries</h3>
+            <p class="text-xs text-slate-500">Separated worker rosters, shift structures, and hazard categories.</p>
+          </div>
+          <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full self-start sm:self-auto">Neon PostgreSQL Multi-Tenant</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-2xl">🏗️</span>
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">Construction Site (Skyline Infrastructure)</h4>
+                <span class="text-[11px] text-slate-500">Masons, Structural Welders, Scaffolding Techs</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600">Focuses on high-altitude scaffold safety reporting, extreme shift overtime math, and daily wage protection.</p>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-2xl">🎓</span>
+              <div>
+                <h4 class="text-sm font-bold text-slate-900">College Operations (SRM University Campus Facilities)</h4>
+                <span class="text-[11px] text-slate-500">Campus Sanitation Staff, Security Guards, Lab Assistants</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-600">Focuses on multi-gate security shifts, chemical storage hazard triage, and transparent university contractor payroll.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
     <!-- SCREEN 1: SECURE LOGIN SCREEN (SHOWN WHEN NOT LOGGED IN) -->
     <!-- ======================================================== -->
     <div id="loginScreen" class="max-w-lg mx-auto my-6 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-lg space-y-6">
@@ -98,12 +265,25 @@
         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-100 shadow-sm">
           <i data-lucide="shield-check" class="w-6 h-6"></i>
         </div>
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">FairShift Portal Login</h2>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">FairShift Workforce Portal</h2>
         <p class="text-xs text-slate-500">Decent Work Platform • Verified Role-Based Access</p>
       </div>
 
-      <!-- 1-CLICK INSTANT DEMO ACCOUNTS (PRIMARY) -->
-      <div class="space-y-3 bg-gradient-to-b from-slate-50 to-white p-4 rounded-xl border border-slate-200">
+      <!-- Auth Switcher 3 Tabs: 1-Click Demo / Worker Sign Up / Manual Login -->
+      <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+        <button id="authTabDemo" onclick="setAuthTab('demo')" class="py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">
+          ⚡ 1-Click Demo
+        </button>
+        <button id="authTabSignup" onclick="setAuthTab('signup')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">
+          📝 Sign Up
+        </button>
+        <button id="authTabManual" onclick="setAuthTab('manual')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">
+          🔑 Custom / Admin
+        </button>
+      </div>
+
+      <!-- SECTION A: 1-CLICK INSTANT DEMO ACCOUNTS (PRIMARY) -->
+      <div id="authDemoSection" class="space-y-3 bg-gradient-to-b from-slate-50 to-white p-4 rounded-xl border border-slate-200">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-1.5">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -203,58 +383,91 @@
 
       </div>
 
-      <!-- ACCORDION / TOGGLE: MANUAL CREDENTIAL LOGIN -->
-      <div class="pt-1">
-        <button type="button" onclick="toggleManualLogin()" class="w-full text-center text-xs text-slate-500 hover:text-slate-800 font-semibold py-1 flex items-center justify-center space-x-1.5 transition">
-          <span id="manualToggleText">Need custom sign-in? Enter ID & PIN manually</span>
-          <i id="manualToggleIcon" data-lucide="chevron-down" class="w-4 h-4"></i>
-        </button>
+      <!-- SECTION B: WORKER SIGN UP FORM -->
+      <form id="workerSignupForm" onsubmit="submitWorkerSignup(event)" class="hidden space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-start space-x-2">
+          <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+          <div>
+            <strong>Instant Worker Registration:</strong> Join the decent work roster. You will be assigned a unique Worker ID code immediately.
+          </div>
+        </div>
+        <div>
+          <label for="signupName" class="block text-xs font-bold text-slate-700 mb-1">Worker Full Name:</label>
+          <input type="text" id="signupName" placeholder="e.g. Karthik Raja" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="signupIndustry" class="block text-xs font-bold text-slate-700 mb-1">Industry Sector:</label>
+            <select id="signupIndustry" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="construction">🏗️ Construction Site</option>
+              <option value="college">🎓 College Operations</option>
+            </select>
+          </div>
+          <div>
+            <label for="signupRate" class="block text-xs font-bold text-slate-700 mb-1">Hourly Wage (₹):</label>
+            <input type="number" id="signupRate" value="85.0" step="5" min="40" max="500" required class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+        <div>
+          <label for="signupRole" class="block text-xs font-bold text-slate-700 mb-1">Designated Role / Trade:</label>
+          <input type="text" id="signupRole" placeholder="e.g. Master Mason or Sanitation Lead" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label for="signupPin" class="block text-xs font-bold text-slate-700 mb-1">Create 4-Digit Security PIN:</label>
+          <input type="password" id="signupPin" value="1234" maxlength="4" required class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 tracking-widest">
+        </div>
 
-        <div id="manualLoginSection" class="hidden mt-3 space-y-4 pt-3 border-t border-slate-100">
-          <!-- Auth Role Switcher Tabs -->
-          <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-            <button id="loginTabWorker" onclick="setLoginTab('worker')" class="py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">
-              📱 Worker Login
-            </button>
-            <button id="loginTabAdmin" onclick="setLoginTab('admin')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">
-              💼 Admin / Supervisor
-            </button>
+        <button type="submit" id="signupSubmitBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Create Account & Enter Portal →</span>
+        </button>
+      </form>
+
+      <!-- SECTION C: MANUAL / ADMIN LOGIN SECTION -->
+      <div id="authManualSection" class="hidden space-y-4 pt-1">
+        <!-- Auth Role Switcher Tabs -->
+        <div class="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+          <button id="loginTabWorker" onclick="setLoginTab('worker')" class="py-2 rounded-lg bg-white text-slate-900 shadow-sm transition">
+            📱 Worker Sign In
+          </button>
+          <button id="loginTabAdmin" onclick="setLoginTab('admin')" class="py-2 rounded-lg text-slate-500 hover:text-slate-900 transition">
+            💼 Admin Dashboard
+          </button>
+        </div>
+
+        <!-- WORKER LOGIN FORM -->
+        <form id="workerLoginForm" onsubmit="submitWorkerLogin(event)" class="space-y-3">
+          <div>
+            <label for="workerCodeInput" class="block text-xs font-bold text-slate-700 mb-1">Worker ID / Code:</label>
+            <input type="text" id="workerCodeInput" value="CN-101" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500 uppercase">
+          </div>
+          <div>
+            <label for="workerPinInput" class="block text-xs font-bold text-slate-700 mb-1">4-Digit Security PIN:</label>
+            <input type="password" id="workerPinInput" value="1234" maxlength="4" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500 tracking-widest">
           </div>
 
-          <!-- WORKER LOGIN FORM -->
-          <form id="workerLoginForm" onsubmit="submitWorkerLogin(event)" class="space-y-3">
-            <div>
-              <label for="workerCodeInput" class="block text-xs font-bold text-slate-700 mb-1">Worker ID / Code:</label>
-              <input type="text" id="workerCodeInput" value="CN-101" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500 uppercase">
-            </div>
-            <div>
-              <label for="workerPinInput" class="block text-xs font-bold text-slate-700 mb-1">4-Digit Security PIN:</label>
-              <input type="password" id="workerPinInput" value="1234" maxlength="4" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500 tracking-widest">
-            </div>
+          <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 focus:outline-none">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Sign In as Worker</span>
+          </button>
+        </form>
 
-            <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 focus:outline-none">
-              <i data-lucide="log-in" class="w-4 h-4"></i>
-              <span>Sign In as Worker</span>
-            </button>
-          </form>
+        <!-- ADMIN LOGIN FORM -->
+        <form id="adminLoginForm" onsubmit="submitAdminLogin(event)" class="hidden space-y-3">
+          <div>
+            <label for="adminUsernameInput" class="block text-xs font-bold text-slate-700 mb-1">Admin Username:</label>
+            <input type="text" id="adminUsernameInput" value="admin" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label for="adminPasswordInput" class="block text-xs font-bold text-slate-700 mb-1">Admin Password:</label>
+            <input type="password" id="adminPasswordInput" value="admin123" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500">
+          </div>
 
-          <!-- ADMIN LOGIN FORM -->
-          <form id="adminLoginForm" onsubmit="submitAdminLogin(event)" class="hidden space-y-3">
-            <div>
-              <label for="adminUsernameInput" class="block text-xs font-bold text-slate-700 mb-1">Admin Username:</label>
-              <input type="text" id="adminUsernameInput" value="admin" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500">
-            </div>
-            <div>
-              <label for="adminPasswordInput" class="block text-xs font-bold text-slate-700 mb-1">Admin Password:</label>
-              <input type="password" id="adminPasswordInput" value="admin123" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500">
-            </div>
-
-            <button type="submit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 focus:outline-none">
-              <i data-lucide="shield-check" class="w-4 h-4"></i>
-              <span>Sign In to Admin Dashboard</span>
-            </button>
-          </form>
-        </div>
+          <button type="submit" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 focus:outline-none">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Sign In to Admin Dashboard</span>
+          </button>
+        </form>
       </div>
 
     </div>
@@ -584,6 +797,82 @@
       </div>
     </div>
   </footer>
+
+  <!-- ======================================================== -->
+  <!-- GEMINI AI CHATBOT DRAWER & FLOATING TRIGGER              -->
+  <!-- ======================================================== -->
+  
+  <!-- Floating Trigger Button -->
+  <button id="aiChatToggleBtn" onclick="toggleAiChat()" class="fixed bottom-5 right-5 z-50 px-4 py-3 bg-gradient-to-tr from-indigo-700 to-indigo-600 hover:from-indigo-600 hover:to-indigo-500 text-white font-bold text-xs rounded-full shadow-2xl flex items-center space-x-2 border border-indigo-400/30 transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400" aria-label="Toggle FairShift AI Assistant">
+    <span class="relative flex h-3 w-3">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-300 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-200"></span>
+    </span>
+    <i data-lucide="sparkles" class="w-4 h-4"></i>
+    <span>FairShift AI</span>
+  </button>
+
+  <!-- Expandable AI Chat Window -->
+  <aside id="aiChatDrawer" class="hidden fixed bottom-20 right-5 z-50 w-96 max-w-[calc(100vw-2.5rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200 animate-in fade-in slide-in-from-bottom-4" style="height: 520px;" aria-label="FairShift Gemini AI Assistant Chat">
+    
+    <!-- Chat Header -->
+    <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-3.5 text-white flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-7 h-7 rounded-lg bg-indigo-500/30 border border-indigo-400/40 flex items-center justify-center text-indigo-300">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-white flex items-center space-x-1.5">
+            <span>FairShift AI</span>
+            <span class="text-[9px] px-1.5 py-0.2 bg-indigo-500/40 rounded text-indigo-200">Gemini</span>
+          </h4>
+          <span class="text-[10px] text-slate-300 block">Decent Work & Labor Advisor</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-1">
+        <button onclick="toggleApiKeyInput()" title="Gemini API Key Settings" class="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition" aria-label="API Key Settings">
+          <i data-lucide="key" class="w-3.5 h-3.5"></i>
+        </button>
+        <button onclick="toggleAiChat()" class="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition" aria-label="Close Chat">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Optional API Key Collapsible Bar -->
+    <div id="aiApiKeyBox" class="hidden p-2.5 bg-indigo-50 border-b border-indigo-100 text-xs space-y-1.5">
+      <div class="flex items-center justify-between">
+        <label for="geminiApiKeyInput" class="text-[10px] font-bold text-indigo-900">Optional Gemini API Key:</label>
+        <span class="text-[9px] text-indigo-700">Stored locally in browser</span>
+      </div>
+      <div class="flex space-x-1.5">
+        <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy..." class="flex-1 bg-white border border-indigo-200 rounded-lg px-2 py-1 text-[11px] font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        <button onclick="saveGeminiApiKey()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition">Save</button>
+      </div>
+    </div>
+
+    <!-- Message Thread Area -->
+    <div id="aiChatMessages" class="flex-1 p-3 overflow-y-auto space-y-2.5 text-xs bg-slate-50/50">
+      <!-- Chat bubbles inserted dynamically -->
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="p-2 border-t border-slate-100 bg-white flex space-x-1.5 overflow-x-auto no-scrollbar text-[10px]">
+      <button onclick="sendQuickPrompt('How is 1.5x overtime calculated?')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-md shrink-0 border border-slate-200 transition">💡 1.5x Overtime Math</button>
+      <button onclick="sendQuickPrompt('How does anonymous reporting protect me?')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-md shrink-0 border border-slate-200 transition">🛡️ Zero-Knowledge Grievance</button>
+      <button onclick="sendQuickPrompt('What is the 48-hour weekly fatigue limit?')" class="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 rounded-md shrink-0 border border-slate-200 transition">⚠️ 48h Fatigue Cap</button>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="aiChatForm" onsubmit="submitAiChat(event)" class="p-2.5 border-t border-slate-200 bg-white flex items-center space-x-2">
+      <input type="text" id="aiChatInput" placeholder="Ask about shift rules, overtime, or labor rights..." required class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500">
+      <button type="submit" id="aiSendBtn" class="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition flex items-center justify-center focus:outline-none" aria-label="Send Message">
+        <i data-lucide="send" class="w-4 h-4"></i>
+      </button>
+    </form>
+
+  </aside>
 
   <!-- App JavaScript -->
   <script src="/static/js/app.js"></script>

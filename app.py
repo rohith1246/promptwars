@@ -15,6 +15,9 @@ Authentication:
 
 import os
 import sys
+import json
+import urllib.request
+import urllib.error
 from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, jsonify, session
 from flask_cors import CORS
@@ -151,6 +154,74 @@ def auth_logout():
     """Destroys current session."""
     session.pop("user", None)
     return jsonify({"success": True, "message": "Logged out successfully."})
+
+
+@app.route("/api/auth/register", methods=["POST"])
+@limiter.limit("15 per minute")
+def auth_register():
+    """
+    Register a new frontline worker with assigned industry and custom 4-digit PIN.
+    Automatically assigns next available Worker ID code.
+    """
+    data = request.get_json() or {}
+    name = sanitize_text(data.get("name", ""), max_length=100)
+    industry = data.get("industry", "construction").strip().lower()
+    role = sanitize_text(data.get("role", "Worker"), max_length=100)
+    pin = str(data.get("pin", "1234")).strip()
+
+    try:
+        hourly_rate = float(data.get("hourly_rate", 80.0))
+        if hourly_rate <= 0:
+            hourly_rate = 80.0
+    except (ValueError, TypeError):
+        hourly_rate = 80.0
+
+    if not name or len(name) < 2:
+        return jsonify({"error": "Full name must be at least 2 characters."}), 400
+
+    if industry not in ["construction", "college"]:
+        industry = "construction"
+
+    if not validate_pin(pin):
+        return jsonify({"error": "PIN must be a 4 to 6 digit numerical code."}), 400
+
+    db = db_session()
+    prefix = "CN" if industry == "construction" else "CL"
+    base = 100 if industry == "construction" else 200
+    count = db.query(Worker).filter_by(industry=industry).count()
+    candidate = f"{prefix}-{base + count + 1}"
+    while db.query(Worker).filter_by(worker_code=candidate).first():
+        count += 1
+        candidate = f"{prefix}-{base + count + 1}"
+
+    new_worker = Worker(
+        worker_code=candidate,
+        name=name,
+        industry=industry,
+        role=role,
+        hourly_rate=hourly_rate,
+        daily_shift_hours=8.0,
+        overtime_multiplier=1.5,
+        pin=pin
+    )
+    db.add(new_worker)
+    db.commit()
+
+    user_data = {
+        "role": "worker",
+        "worker_id": new_worker.id,
+        "worker_code": new_worker.worker_code,
+        "name": new_worker.name,
+        "industry": new_worker.industry,
+        "job_role": new_worker.role
+    }
+    session["user"] = user_data
+    return jsonify({
+        "success": True,
+        "message": f"Welcome {new_worker.name}! Your assigned Worker ID is {new_worker.worker_code}.",
+        "worker_code": new_worker.worker_code,
+        "user": user_data
+    }), 201
 
 
 # ============================================================
@@ -414,6 +485,117 @@ def get_stats():
         "fatigued_workers_count": fatigued_count,
         "sdg_compliance_score": 94 if open_grievances == 0 else max(60, 100 - (open_grievances * 6))
     })
+
+
+# ============================================================
+# GEMINI AI CHATBOT API (DECENT WORK & LABOR ADVISOR)
+# ============================================================
+
+@app.route("/api/ai/chat", methods=["POST"])
+@limiter.limit("30 per minute")
+def ai_chat():
+    """
+    FairShift Gemini AI Assistant for Decent Work, Labor Laws, and Shift Calculations.
+    Accepts user message and optional Gemini API Key.
+    Supports Google Gemini 1.5 Flash with fallback to FairShift Knowledge Engine.
+    """
+    data = request.get_json() or {}
+    message = sanitize_text(data.get("message", ""), max_length=1000)
+    custom_api_key = data.get("api_key", "").strip()
+
+    if not message:
+        return jsonify({"error": "Message cannot be empty."}), 400
+
+    api_key = custom_api_key or os.getenv("GEMINI_API_KEY", "")
+
+    # If Gemini API key is available, call Google Gemini 1.5 Flash
+    if api_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            prompt = (
+                "You are FairShift AI, an intelligent, empathetic advisor for frontline workers and employers "
+                "advancing UN SDG 8 (Decent Work and Economic Growth). You specialize in Indian labor standards, "
+                "transparent shift tracking, 1.5x overtime wage calculations beyond 8.0 hours, 48-hour weekly fatigue caps, "
+                "zero-knowledge anonymous safety reporting, and multilingual payslips. Keep answers concise (2-3 paragraphs), "
+                "supportive, clear, and actionable.\n\n"
+                f"User Question: {message}"
+            )
+            req_payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }]
+            }
+            req_data = json.dumps(req_payload).encode("utf-8")
+            req = urllib.request.Request(
+                url,
+                data=req_data,
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                res_json = json.loads(resp.read().decode("utf-8"))
+                reply = res_json["candidates"][0]["content"]["parts"][0]["text"]
+                return jsonify({
+                    "success": True,
+                    "reply": reply,
+                    "source": "gemini-1.5-flash"
+                }), 200
+        except Exception:
+            # Fall back cleanly to the built-in FairShift Decent Work Knowledge engine
+            pass
+
+    # Built-in FairShift Decent Work Knowledge Engine
+    msg_lower = message.lower()
+    if any(k in msg_lower for k in ["overtime", "ot", "extra", "1.5"]):
+        reply = (
+            "**Overtime Calculation in FairShift (SDG 8.5):**\n\n"
+            "• **Standard Shift:** 8.0 hours per calendar day.\n"
+            "• **Overtime Rate:** **1.5× your base hourly rate** for every hour beyond 8.0 hours.\n\n"
+            "**Formula:**\n"
+            "$$\\text{Overtime Pay} = \\text{Overtime Hours} \\times (\\text{Base Rate} \\times 1.5)$$\n"
+            "For example: If your base rate is ₹85/hr and you work 10.5 hours (2.5h OT), your overtime earnings are $2.5 \\times ₹127.50 = ₹318.75$ extra!"
+        )
+    elif any(k in msg_lower for k in ["fatigue", "48", "limit", "rest", "hours", "exhaustion"]):
+        reply = (
+            "**Fatigue & Safety Guardrail (UN SDG 8.8):**\n\n"
+            "• Under ILO guidelines and Indian Factories Act standards, weekly duty should not exceed **48 hours**.\n"
+            "• FairShift automatically aggregates weekly shift hours. If you cross 48 hours, the system generates an immediate **Fatigue Warning**.\n\n"
+            "This alerts your supervisor to schedule mandatory rest intervals and prevents high-risk scaffolding or machinery accidents."
+        )
+    elif any(k in msg_lower for k in ["grievance", "anonymous", "hazard", "safety", "retaliation"]):
+        reply = (
+            "**Zero-Knowledge Anonymous Reporting:**\n\n"
+            "• **Total Anonymity:** When you submit an issue, your name, worker ID, and device IP address are completely stripped before saving.\n"
+            "• **Tracking Code:** You receive a secure code like `FS-10492`.\n"
+            "• **Status Tracking:** You can check employer triage notes (Open, Under Investigation, Resolved) anytime using your ticket code without ever exposing who you are."
+        )
+    elif any(k in msg_lower for k in ["deduction", "pf", "esi", "tax", "payslip", "formula"]):
+        reply = (
+            "**Transparent Payslip Formula:**\n\n"
+            "$$\\text{Net Take-Home} = \\text{Base Shift Pay} + \\text{Overtime Pay (1.5×)} - 5\\% \\text{ Statutory Social Security}$$\n\n"
+            "The 5% deduction covers Provident Fund (PF) and healthcare insurance (ESI). You can view the full explanation in English, Hindi (हिन्दी), Tamil (தமிழ்), or Telugu (తెలుగు)!"
+        )
+    elif any(k in msg_lower for k in ["sdg", "goal", "theme", "un"]):
+        reply = (
+            "**FairShift Alignment with UN SDG 8:**\n\n"
+            "• **Target 8.5 (Decent Work & Equal Pay):** Eliminates wage theft and payroll confusion through automated transparent shift computation.\n"
+            "• **Target 8.8 (Safe Working Environments):** Protects frontline workers through 48h fatigue caps and zero-retaliation anonymous hazard reporting."
+        )
+    else:
+        reply = (
+            "**Hello! I am FairShift AI — your Decent Work & Labor Rights Assistant.**\n\n"
+            "I can assist you with:\n"
+            "• **1.5× Overtime Math:** Understanding extra hour pay calculation.\n"
+            "• **48-Hour Fatigue Guardrails:** Staying safe under labor health caps.\n"
+            "• **Anonymous Reporting:** Submitting safety hazards without fear of retaliation.\n"
+            "• **Transparent Payslips:** Breakdown of deductions in 4 languages.\n\n"
+            "Ask any question or tap one of the suggested prompts below!"
+        )
+
+    return jsonify({
+        "success": True,
+        "reply": reply,
+        "source": "fairshift-knowledge-base"
+    }), 200
 
 
 if __name__ == "__main__":

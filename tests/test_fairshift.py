@@ -334,6 +334,41 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertIn(b"loginScreen", res.data)
         self.assertIn(b"SDG 8: Decent Work", res.data)
 
+    def test_18_worker_signup_registration(self):
+        """Verify new frontline worker can register, get auto-assigned ID, and immediately authenticate."""
+        payload = {
+            "name": "Karthik Raja",
+            "industry": "construction",
+            "role": "Master Electrician",
+            "hourly_rate": 105.0,
+            "pin": "5678"
+        }
+        res = self.client.post("/api/auth/register", json=payload)
+        self.assertEqual(res.status_code, 201)
+        data = json.loads(res.data)
+        self.assertTrue(data["success"])
+        self.assertTrue(data["worker_code"].startswith("CN-"))
+        self.assertEqual(data["user"]["name"], "Karthik Raja")
+
+        # Verify new worker can log in with new PIN
+        res_login = self.client.post("/api/auth/login", json={
+            "role": "worker",
+            "worker_code": data["worker_code"],
+            "pin": "5678"
+        })
+        self.assertEqual(res_login.status_code, 200)
+
+    def test_19_ai_chatbot_response(self):
+        """Verify FairShift AI Chatbot returns accurate decent work intelligence."""
+        res = self.client.post("/api/ai/chat", json={
+            "message": "How is my overtime calculated?"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertTrue(data["success"])
+        self.assertIn("1.5", data["reply"])
+        self.assertIn("Overtime", data["reply"])
+
 
 if __name__ == "__main__":
     unittest.main()
