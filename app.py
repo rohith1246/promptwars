@@ -19,12 +19,15 @@ import json
 import urllib.request
 import urllib.error
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, session
+from typing import Dict, Any, Tuple, Optional, Union
+from flask import Flask, render_template, request, jsonify, session, Response
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
+from sqlalchemy.orm import joinedload
 
+from config import get_config
 from database import (
     init_db, db_session, Worker, Attendance, Grievance, generate_ticket_code
 )
@@ -36,7 +39,7 @@ from wage_engine import calculate_payslip
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "fairshift-sdg8-decent-work-secret-key-2026")
+app.config.from_object(get_config())
 CORS(app)
 
 # Reverse proxy handling
@@ -51,11 +54,18 @@ limiter = Limiter(
 )
 
 @app.after_request
-def apply_security_headers(response):
-    return add_security_headers(response)
+def apply_security_headers(response: Response) -> Response:
+    """Inject OWASP security headers and optimized caching policies."""
+    response = add_security_headers(response)
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.teardown_appcontext
-def shutdown_session(exception=None):
+def shutdown_session(exception: Optional[BaseException] = None) -> None:
+    """Ensure database scoped session is cleanly removed after each request."""
     db_session.remove()
 
 with app.app_context():
@@ -329,9 +339,15 @@ def check_out():
 
 @app.route("/api/attendance", methods=["GET"])
 def get_attendance():
+    """
+    Retrieve live attendance and shift records.
+    Uses eager loading (joinedload) to eliminate N+1 queries.
+    """
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
-    records = session.query(Attendance).filter_by(industry=industry).order_by(Attendance.id.desc()).limit(30).all()
+    records = session.query(Attendance).options(joinedload(Attendance.worker)).filter_by(
+        industry=industry
+    ).order_by(Attendance.id.desc()).limit(30).all()
     return jsonify([r.to_dict() for r in records])
 
 
@@ -454,6 +470,10 @@ def update_grievance_status():
 
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
+    """
+    Compute operational KPIs and SDG 8 compliance metrics.
+    Optimized with O(A) single-pass hash aggregation.
+    """
     industry = request.args.get("industry", "construction").strip().lower()
     session = db_session()
 
@@ -469,11 +489,11 @@ def get_stats():
     open_grievances = sum(1 for g in grievances if g.status != "Resolved")
     critical_safety = sum(1 for g in grievances if g.urgency == "Critical" and g.status != "Resolved")
 
-    fatigued_count = 0
-    for w in workers:
-        w_records = [r for r in attendance_records if r.worker_id == w.id]
-        if sum(r.total_hours for r in w_records) > 48.0:
-            fatigued_count += 1
+    # High-efficiency O(A) aggregation map replacing O(W x A) nested loops
+    worker_hours_map = {}
+    for r in attendance_records:
+        worker_hours_map[r.worker_id] = worker_hours_map.get(r.worker_id, 0.0) + (r.total_hours or 0.0)
+    fatigued_count = sum(1 for h in worker_hours_map.values() if h > 48.0)
 
     return jsonify({
         "industry": industry,

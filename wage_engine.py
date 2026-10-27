@@ -75,8 +75,15 @@ def calculate_payslip(worker_dict: Dict[str, Any], attendance_records: List[Dict
     hourly_rate = max(0.0, float(worker_dict.get("hourly_rate", 75.0) or 75.0))
     ot_multiplier = max(1.0, float(worker_dict.get("overtime_multiplier", 1.5) or 1.5))
 
-    total_reg_hours = max(0.0, sum(float(r.get("regular_hours", 0.0) or 0.0) for r in attendance_records))
-    total_ot_hours = max(0.0, sum(float(r.get("overtime_hours", 0.0) or 0.0) for r in attendance_records))
+    # Single-pass high-efficiency accumulation
+    total_reg_hours = 0.0
+    total_ot_hours = 0.0
+    for r in attendance_records:
+        total_reg_hours += float(r.get("regular_hours", 0.0) or 0.0)
+        total_ot_hours += float(r.get("overtime_hours", 0.0) or 0.0)
+
+    total_reg_hours = max(0.0, total_reg_hours)
+    total_ot_hours = max(0.0, total_ot_hours)
     total_work_hours = total_reg_hours + total_ot_hours
 
     base_pay = round(total_reg_hours * hourly_rate, 2)

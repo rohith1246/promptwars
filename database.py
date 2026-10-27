@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey, text
+    create_engine, Column, Integer, String, Float, DateTime, Date, Text, ForeignKey, Index, text
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, scoped_session
 
@@ -39,16 +39,41 @@ def get_database_uri() -> str:
     return uri
 
 
-database_uri = get_database_uri()
-connect_args = {"check_same_thread": False} if database_uri.startswith("sqlite") else {}
+def create_resilient_engine():
+    """
+    Creates an optimized engine for Neon Serverless PostgreSQL with automatic
+    fallback to SQLite if network DNS or external database is unreachable.
+    """
+    uri = get_database_uri()
+    if uri.startswith("postgresql"):
+        try:
+            eng = create_engine(
+                uri,
+                pool_size=10,
+                max_overflow=20,
+                pool_timeout=10,
+                pool_recycle=1800,
+                pool_pre_ping=True
+            )
+            with eng.connect() as conn:
+                conn.execute(text("SELECT 1;"))
+            logger.info("Connected to Neon Serverless PostgreSQL.")
+            return eng
+        except Exception as err:
+            logger.warning(f"Neon PostgreSQL offline or DNS unreachable ({err}). Falling back to SQLite.")
+            return create_engine(
+                "sqlite:///fairshift.db",
+                connect_args={"check_same_thread": False},
+                pool_pre_ping=True
+            )
+    return create_engine(
+        uri,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True
+    )
 
-engine = create_engine(
-    database_uri,
-    connect_args=connect_args,
-    pool_pre_ping=True,
-    pool_recycle=300
-)
 
+engine = create_resilient_engine()
 db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 
@@ -87,6 +112,10 @@ class Worker(Base):
 
 class Attendance(Base):
     __tablename__ = "attendance"
+    __table_args__ = (
+        Index("ix_attendance_worker_date", "worker_id", "date"),
+        Index("ix_attendance_industry_status", "industry", "status"),
+    )
 
     id = Column(Integer, primary_key=True)
     worker_id = Column(Integer, ForeignKey("workers.id"), nullable=False, index=True)
@@ -121,6 +150,10 @@ class Attendance(Base):
 
 class Grievance(Base):
     __tablename__ = "grievances"
+    __table_args__ = (
+        Index("ix_grievance_industry_status", "industry", "status"),
+        Index("ix_grievance_urgency_status", "urgency", "status"),
+    )
 
     id = Column(Integer, primary_key=True)
     ticket_code = Column(String(32), unique=True, nullable=False, index=True)
@@ -160,8 +193,9 @@ def init_db():
     try:
         with engine.connect() as conn:
             conn.execution_options(isolation_level="AUTOCOMMIT")
-            conn.execute(text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS pin VARCHAR(64) DEFAULT '1234';"))
-            conn.execute(text("UPDATE workers SET pin = '1234' WHERE pin IS NULL;"))
+            if "postgresql" in str(engine.url):
+                conn.execute(text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS pin VARCHAR(64) DEFAULT '1234';"))
+                conn.execute(text("UPDATE workers SET pin = '1234' WHERE pin IS NULL;"))
     except Exception as e:
         logger.info(f"Schema check complete: {e}")
 
