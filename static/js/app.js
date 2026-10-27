@@ -18,6 +18,13 @@ const state = {
 
 document.addEventListener("DOMContentLoaded", async () => {
   initLucide();
+  const presetSel = document.getElementById("presetWorkerSelect");
+  if (presetSel) {
+    presetSel.addEventListener("change", (e) => {
+      const codeInput = document.getElementById("workerCodeInput");
+      if (codeInput) codeInput.value = e.target.value;
+    });
+  }
   await checkAuth();
 });
 
@@ -167,19 +174,69 @@ async function submitAdminLogin(e) {
   }
 }
 
-async function quickLogin(codeOrUser, role) {
-  if (role === "admin") {
-    document.getElementById("adminUsernameInput").value = "admin";
-    document.getElementById("adminPasswordInput").value = "fairshift2026";
-    setLoginTab("admin");
-    const fakeEvent = { preventDefault: () => {} };
-    await submitAdminLogin(fakeEvent);
+function toggleManualLogin() {
+  const section = document.getElementById("manualLoginSection");
+  const toggleText = document.getElementById("manualToggleText");
+  const toggleIcon = document.getElementById("manualToggleIcon");
+
+  if (section.classList.contains("hidden")) {
+    section.classList.remove("hidden");
+    toggleText.innerText = "Hide custom sign-in options";
+    toggleIcon.setAttribute("data-lucide", "chevron-up");
   } else {
-    document.getElementById("workerCodeInput").value = codeOrUser;
-    document.getElementById("workerPinInput").value = "1234";
-    setLoginTab("worker");
-    const fakeEvent = { preventDefault: () => {} };
-    await submitWorkerLogin(fakeEvent);
+    section.classList.add("hidden");
+    toggleText.innerText = "Need custom sign-in? Enter ID & PIN manually";
+    toggleIcon.setAttribute("data-lucide", "chevron-down");
+  }
+  initLucide();
+}
+
+function loginSelectedPresetWorker(btnEl) {
+  const sel = document.getElementById("presetWorkerSelect");
+  if (!sel) return;
+  const code = sel.value;
+  quickLogin(code, "worker", btnEl);
+}
+
+async function quickLogin(codeOrUser, role, btnEl) {
+  let originalHtml = "";
+  if (btnEl) {
+    originalHtml = btnEl.innerHTML;
+    btnEl.innerHTML = `<span class="inline-flex items-center text-xs font-bold text-amber-700 animate-pulse">⏳ Entering...</span>`;
+    btnEl.disabled = true;
+  }
+
+  try {
+    if (role === "admin") {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "admin", username: "admin", password: "fairshift2026" })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Sign-in error: " + data.error);
+        if (btnEl) { btnEl.innerHTML = originalHtml; btnEl.disabled = false; }
+        return;
+      }
+      applyAuthState(data.user);
+    } else {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "worker", worker_code: codeOrUser, pin: "1234" })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Sign-in error: " + data.error);
+        if (btnEl) { btnEl.innerHTML = originalHtml; btnEl.disabled = false; }
+        return;
+      }
+      applyAuthState(data.user);
+    }
+  } catch (err) {
+    alert("Login failed: " + err.message);
+    if (btnEl) { btnEl.innerHTML = originalHtml; btnEl.disabled = false; }
   }
 }
 
