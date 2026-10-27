@@ -2,7 +2,25 @@
 
 > **Theme:** UN SDG 8 – Decent Work and Economic Growth  
 > **Event:** Prompt Wars 2026 (Prompt Wars × SRM ACM Student Chapter)  
-> **Repository:** [https://github.com/rohith1246/LegalLens-AI.git](https://github.com/rohith1246/LegalLens-AI.git)
+> **Repository:** [https://github.com/rohith1246/promptwars.git](https://github.com/rohith1246/promptwars.git)
+
+---
+
+## 🔐 Role-Based Authentication & Access Control
+
+FairShift incorporates a role-based login gate that secures internal workforce rosters and grievance desks:
+- **Worker Portal:** Workers sign in with their unique **Worker ID** and **PIN** to access their personal shift logs, transparent multilingual payslips, and anonymous reporting.
+- **Admin / Employer Dashboard:** Supervisors sign in with **Admin Credentials** to manage sector rosters, view overtime analytics, and triage grievances.
+
+### Pre-Configured Test Accounts (Quick-Fill Available in UI)
+
+| Role | Username / ID | Password / PIN | Industry / Profile | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin / Employer** | `admin` | `admin123` | Multi-Industry | Full management dashboard, workforce KPIs, live attendance monitoring, and grievance triage desk |
+| **Worker (Construction)** | `CN-102` | `1234` | Skyline Infrastructure | Deepak Verma (Scaffolding Technician, ₹85/hr, 1.5× OT) |
+| **Worker (College)** | `CL-202` | `1234` | SRM University Operations | K. Murugan (Senior Security Guard, ₹80/hr, 1.5× OT) |
+
+> 💡 **Evaluator Convenience:** The login screen provides 1-click **"Quick Fill"** preset buttons for instant testing.
 
 ---
 
@@ -72,7 +90,7 @@ FairShift replaces fragmented manual registers with a **secure, transparent, mul
 
 ---
 
-## 🧪 Automated Test Suite (10/10 Passing)
+## 🧪 Automated Test Suite (13/13 Passing)
 
 Run test suite:
 ```bash
@@ -80,10 +98,12 @@ pytest tests/test_fairshift.py -v
 ```
 
 Tests cover:
+- Admin login, session creation, and secure logout
+- Worker ID + PIN authentication and invalid attempt rejection
 - Worker roster segregation for Construction and College industries
 - Duplicate check-in prevention
-- Overtime calculation accuracy
-- Mathematical payslip formula and 1.5x multiplier verification
+- Overtime calculation accuracy (1.5× rate above 8.0 daily hours)
+- Mathematical payslip formula and deduction verification
 - Multilingual translations (Hindi and Tamil)
 - 48-hour fatigue limit detection
 - Anonymous ticket generation and zero-knowledge status tracking
@@ -103,7 +123,7 @@ Open [http://localhost:5000](http://localhost:5000)
 ### 2. Run with Neon PostgreSQL
 Add your Neon connection string to `.env`:
 ```env
-DATABASE_URL=postgresql://user:password@ep-cool-sample.us-east-2.aws.neon.tech/fairshift?sslmode=require
+DATABASE_URL=postgresql://user:password@ep-cool-sample.us-east-2.aws.neon.tech/neondb?sslmode=require
 ```
 Run:
 ```bash
@@ -112,7 +132,14 @@ python app.py
 
 ---
 
-## ☁️ Deployment on Render
+## ☁️ Deployment on Google Cloud Run
 
-This repository is pre-configured with `Procfile`, `wsgi.py` (with `ProxyFix`), and `render.yaml`.
-Simply push to GitHub and Render will automatically deploy with Gunicorn WSGI.
+This repository is containerized and ready for Google Cloud Run:
+
+```bash
+gcloud run deploy fairshift \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars "DATABASE_URL=your_neon_postgresql_url,SECRET_KEY=fairshift-prod-key-2026"
+```
