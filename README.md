@@ -88,10 +88,12 @@ FairShift replaces fragmented manual registers with a **secure, transparent, mul
 - **Rate Limiting:** `Flask-Limiter` protects endpoints against brute-force flooding (120 req/min).
 - **Hardened HTTP Headers:** Enforces CSP, HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, X-XSS-Protection.
 - **Accessibility (WCAG 2.1 AA):** Screen-reader landmarks, skip-links, ARIA tablists, high color contrast, full keyboard navigation.
+- **FairShift Gemini AI Assistant:** Floating chatbot supporting Google Gemini 1.5 Flash (via optional API key) with resilient built-in fallback knowledge on overtime math, labor laws, and SDG 8 standards.
+- **Worker Self-Registration:** 1-Click worker account sign-up with automatic Worker ID code generation and role allocation.
 
 ---
 
-## 🧪 Automated Test Suite (20/20 Passing)
+## 🧪 Automated Test Suite (22/22 Passing)
 
 Run test suite:
 ```bash
@@ -116,6 +118,8 @@ Tests cover:
 - Mathematical negative number guardrails in wage calculation
 - Health check endpoint with SDG 8 metadata
 - Accessible DOM rendering and skip link verification
+- Worker self-registration and instant session assignment
+- FairShift Gemini AI chatbot query and mathematical response verification
 
 ---
 
