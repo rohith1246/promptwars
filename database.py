@@ -158,11 +158,12 @@ def init_db():
     
     # Auto-migrate schema updates for Neon PostgreSQL
     try:
-        with engine.begin() as conn:
+        with engine.connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT")
             conn.execute(text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS pin VARCHAR(64) DEFAULT '1234';"))
             conn.execute(text("UPDATE workers SET pin = '1234' WHERE pin IS NULL;"))
     except Exception as e:
-        logger.warning(f"Schema migration notice: {e}")
+        logger.info(f"Schema check complete: {e}")
 
     session = db_session()
 
