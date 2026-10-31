@@ -50,7 +50,7 @@ pytest tests/test_fairshift.py -v
 ---
 
 ## 🌐 Demo Link
-- **Live Deployed App:** [https://fairshift-app.onrender.com](https://fairshift-app.onrender.com)
+- **Live Deployed App:** [https://promptwars-tyoh.onrender.com/](https://promptwars-tyoh.onrender.com/)
 - **Public GitHub Repository:** [https://github.com/rohith1246/promptwars](https://github.com/rohith1246/promptwars)
 
 ---

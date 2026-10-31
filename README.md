@@ -4,7 +4,7 @@
 > **Event:** Prompt Wars 2026 (Prompt Wars × SRM ACM Student Chapter)  
 > **Guidance:** Dr. M. Suchithra, Associate Professor, Department of Computing Technologies, SRMIST Kattankulathur  
 > **Repository:** [https://github.com/rohith1246/promptwars.git](https://github.com/rohith1246/promptwars.git)  
-> **Live Deployed App:** [https://fairshift-app.onrender.com](https://fairshift-app.onrender.com)
+> **Live Deployed App:** [https://promptwars-tyoh.onrender.com/](https://promptwars-tyoh.onrender.com/)
 
 ---
 
