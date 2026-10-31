@@ -369,6 +369,76 @@ class FairShiftTestSuite(unittest.TestCase):
         self.assertIn("1.5", data["reply"])
         self.assertIn("Overtime", data["reply"])
 
+    # ============================================================
+    # NEW FEATURE TESTS: COMPLAINTS, LEGAL DIRECTORY, PREVENTION
+    # ============================================================
+
+    def test_20_complaint_submission_and_tracking(self):
+        """Verify submitting a workplace complaint with evidence and tracking its timeline."""
+        payload = {
+            "category": "Unpaid Overtime",
+            "description": "Worked 14 hours on Saturday and Sunday but received no overtime wage payment.",
+            "evidence_type": "Salary Slips",
+            "evidence_description": "Pay slip showing only standard 8-hour pay.",
+            "is_anonymous": True
+        }
+        res = self.client.post("/api/complaints", json=payload)
+        self.assertEqual(res.status_code, 201)
+        data = json.loads(res.data)
+        self.assertTrue(data["success"])
+        ticket_code = data["ticket_code"]
+        self.assertTrue(ticket_code.startswith("FC-"))
+
+        # Track the complaint
+        res_track = self.client.get(f"/api/complaints/track/{ticket_code}")
+        self.assertEqual(res_track.status_code, 200)
+        track_data = json.loads(res_track.data)
+        self.assertEqual(track_data["ticket_code"], ticket_code)
+        self.assertEqual(track_data["category"], "Unpaid Overtime")
+        self.assertTrue(len(track_data["timeline"]) >= 4)
+        self.assertTrue(track_data["timeline"][0]["completed"])
+
+    def test_21_complaint_management_and_referral(self):
+        """Verify admin can list complaints, update status, and refer case to official authority."""
+        # List complaints
+        res_list = self.client.get("/api/complaints")
+        self.assertEqual(res_list.status_code, 200)
+        complaints = json.loads(res_list.data)
+        self.assertTrue(len(complaints) > 0)
+        first_ticket = complaints[0]["ticket_code"]
+
+        # Refer to authority
+        res_refer = self.client.post("/api/complaints/update", json={
+            "ticket_code": first_ticket,
+            "status": "Referred to Authority",
+            "authority_referral": "District Labour Commissioner, Chennai",
+            "resolution_note": "Case dossier forwarded for official inspection."
+        })
+        self.assertEqual(res_refer.status_code, 200)
+        ref_data = json.loads(res_refer.data)
+        self.assertEqual(ref_data["complaint"]["status"], "Referred to Authority")
+        self.assertIn("Labour Commissioner", ref_data["complaint"]["authority_referral"])
+
+    def test_22_legal_resources_directory(self):
+        """Verify legal aid & authority directory returns verified statutory organizations."""
+        res = self.client.get("/api/legal-resources")
+        self.assertEqual(res.status_code, 200)
+        resources = json.loads(res.data)
+        self.assertTrue(len(resources) >= 6)
+        names = [r["name"] for r in resources]
+        self.assertTrue(any("Labour Commissioner" in n for n in names))
+        self.assertTrue(any("Legal Services" in n or "NALSA" in n for n in names))
+
+    def test_23_prevention_dashboard(self):
+        """Verify proactive prevention dashboard computes compliance grade, risk radar, and recommendations."""
+        res = self.client.get("/api/prevention/dashboard")
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertIn("compliance_score", data)
+        self.assertIn("compliance_grade", data)
+        self.assertIn("recommendations", data)
+        self.assertTrue(len(data["recommendations"]) > 0)
+
 
 if __name__ == "__main__":
     unittest.main()

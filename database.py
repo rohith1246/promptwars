@@ -181,9 +181,55 @@ class Grievance(Base):
         }
 
 
+class Complaint(Base):
+    __tablename__ = "complaints"
+    __table_args__ = (
+        Index("ix_complaint_status", "status"),
+        Index("ix_complaint_category", "category"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    ticket_code = Column(String(32), unique=True, nullable=False, index=True)
+    worker_id = Column(Integer, ForeignKey("workers.id"), nullable=True)  # nullable for anonymous
+    category = Column(String(64), nullable=False)  # 'Unpaid Overtime', 'Withheld Salary', 'Workplace Harassment', 'Unsafe Conditions', 'Discrimination', 'Other'
+    description = Column(Text, nullable=False)
+    evidence_type = Column(String(64), nullable=True)  # 'Attendance Records', 'Salary Slips', 'Messages/Screenshots', 'Witness Statement', 'Other'
+    evidence_description = Column(Text, nullable=True)
+    status = Column(String(32), default="Submitted")  # 'Submitted' -> 'Under Review' -> 'Referred to Authority' -> 'Resolved'
+    authority_referral = Column(String(120), nullable=True)  # Which authority/service it was referred to
+    resolution_note = Column(Text, default="Your complaint has been received and is being processed.")
+    is_anonymous = Column(Integer, default=1)  # 1 = anonymous, 0 = identified
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=True)
+
+    worker = relationship("Worker", backref="complaints", foreign_keys=[worker_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "ticket_code": self.ticket_code,
+            "category": self.category,
+            "description": self.description,
+            "evidence_type": self.evidence_type,
+            "evidence_description": self.evidence_description,
+            "status": self.status,
+            "authority_referral": self.authority_referral,
+            "resolution_note": self.resolution_note,
+            "is_anonymous": bool(self.is_anonymous),
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
+            "worker_name": self.worker.name if self.worker and not self.is_anonymous else "Anonymous",
+        }
+
+
 def generate_ticket_code() -> str:
     num_part = "".join(random.choices(string.digits, k=5))
     return f"FS-{num_part}"
+
+
+def generate_complaint_code() -> str:
+    num_part = "".join(random.choices(string.digits, k=5))
+    return f"FC-{num_part}"
 
 
 def init_db():
@@ -286,6 +332,48 @@ def init_db():
             )
         ]
         session.add_all(seed_grievances)
+
+        # Seed sample complaints for the enhanced complaint system
+        seed_complaints = [
+            Complaint(
+                ticket_code="FC-20001",
+                worker_id=None,
+                category="Unpaid Overtime",
+                description="Worked 12 hours daily for the past 2 weeks but salary slip shows payment for only 8 hours each day. No overtime compensation received.",
+                evidence_type="Salary Slips",
+                evidence_description="Salary slip for October 2026 showing only 8-hour payment despite 12-hour shifts.",
+                status="Under Review",
+                resolution_note="Complaint escalated to payroll audit team. Comparing attendance logs with salary records.",
+                is_anonymous=1,
+                created_at=datetime.utcnow() - timedelta(days=3)
+            ),
+            Complaint(
+                ticket_code="FC-20002",
+                worker_id=None,
+                category="Unsafe Conditions",
+                description="Construction site Block C lacks proper safety nets on floors 6-8. Workers forced to work at height without harness equipment.",
+                evidence_type="Witness Statement",
+                evidence_description="Multiple workers witnessed the absence of safety nets during morning shift on 25 Oct.",
+                status="Referred to Authority",
+                authority_referral="District Labour Commissioner, Chennai",
+                resolution_note="Referred to District Labour Commissioner. Site inspection scheduled.",
+                is_anonymous=1,
+                created_at=datetime.utcnow() - timedelta(days=5)
+            ),
+            Complaint(
+                ticket_code="FC-20003",
+                worker_id=None,
+                category="Withheld Salary",
+                description="September salary not paid to 15 campus cleaning staff. Management says 'budget delay' but no written communication.",
+                evidence_type="Attendance Records",
+                evidence_description="Attendance register showing all 15 staff present throughout September.",
+                status="Submitted",
+                resolution_note="Your complaint has been received and is being processed.",
+                is_anonymous=0,
+                created_at=datetime.utcnow() - timedelta(hours=18)
+            ),
+        ]
+        session.add_all(seed_complaints)
         session.commit()
 
     session.close()

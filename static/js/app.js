@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (codeInput) codeInput.value = e.target.value;
     });
   }
+  loadLegalResources();
   await checkAuth();
 });
 
@@ -93,6 +94,8 @@ async function applyAuthState(user) {
     await loadStats();
     await loadAttendance();
     await loadGrievances();
+    await loadComplaints();
+    await loadPreventionDashboard();
   } else {
     // Worker logged in
     roleBadge.innerText = "Worker";
@@ -349,6 +352,8 @@ async function changeIndustry() {
   await loadStats();
   await loadAttendance();
   await loadGrievances();
+  await loadComplaints();
+  await loadPreventionDashboard();
   initLucide();
 }
 
@@ -679,6 +684,396 @@ async function updateGrievance(ticketCode, status) {
     await loadStats();
   } catch (err) {
     alert("Failed to update status: " + err.message);
+  }
+}
+
+// ============================================================
+// FEATURE 4: ENHANCED COMPLAINT & EVIDENCE SUBMISSION
+// ============================================================
+
+async function submitComplaint(e) {
+  e.preventDefault();
+  const category = document.getElementById("complaintCategory").value;
+  const description = document.getElementById("complaintDescription").value.trim();
+  const evidenceType = document.getElementById("complaintEvidenceType").value;
+  const evidenceDesc = document.getElementById("complaintEvidenceDesc").value.trim();
+  const isAnonymous = document.getElementById("complaintAnonymous") ? document.getElementById("complaintAnonymous").checked : true;
+
+  if (!description || description.length < 10) {
+    alert("Please provide a detailed description (at least 10 characters).");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/complaints", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        category,
+        description,
+        evidence_type: evidenceType,
+        evidence_description: evidenceDesc,
+        is_anonymous: isAnonymous
+      })
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Error submitting complaint: " + data.error);
+      return;
+    }
+
+    alert(`🎉 Complaint Submitted Securely!\n\nYour Unique Tracking Code: ${data.ticket_code}\n\nSave this code to check your complaint progress and legal referral status without fear of retaliation.`);
+    document.getElementById("complaintDescription").value = "";
+    if (document.getElementById("complaintEvidenceDesc")) document.getElementById("complaintEvidenceDesc").value = "";
+    const trackInput = document.getElementById("complaintTrackInput");
+    if (trackInput) {
+      trackInput.value = data.ticket_code;
+      trackComplaint();
+    }
+  } catch (err) {
+    alert("Failed to submit complaint: " + err.message);
+  }
+}
+
+async function trackComplaint() {
+  const input = document.getElementById("complaintTrackInput");
+  if (!input) return;
+  const code = input.value.trim().toUpperCase();
+  if (!code) return;
+
+  const resultBox = document.getElementById("complaintTrackResult");
+  if (!resultBox) return;
+  resultBox.classList.remove("hidden");
+  resultBox.innerHTML = `<span class="text-slate-400 text-xs">Checking complaint status...</span>`;
+
+  try {
+    const res = await fetch(`/api/complaints/track/${code}`);
+    const data = await res.json();
+    if (data.error) {
+      resultBox.innerHTML = `<span class="text-rose-600 font-bold text-xs">${data.error}</span>`;
+      return;
+    }
+
+    const statusColors = {
+      "Submitted": "bg-blue-100 text-blue-800",
+      "Under Review": "bg-amber-100 text-amber-800",
+      "Referred to Authority": "bg-purple-100 text-purple-800",
+      "Resolved": "bg-emerald-100 text-emerald-800"
+    };
+
+    let timelineHtml = "";
+    if (data.timeline && data.timeline.length) {
+      timelineHtml = data.timeline.map(t => `
+        <div class="flex items-start space-x-3">
+          <div class="flex flex-col items-center">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${t.completed ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-400'}">
+              ${t.completed ? '✓' : '○'}
+            </div>
+            <div class="w-0.5 h-6 ${t.completed ? 'bg-emerald-400' : 'bg-slate-200'}"></div>
+          </div>
+          <div class="pb-3 text-xs">
+            <p class="font-bold ${t.completed ? 'text-slate-900' : 'text-slate-400'}">${t.step}</p>
+            <p class="text-[11px] ${t.completed ? 'text-slate-600' : 'text-slate-400'}">${t.description}</p>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    resultBox.innerHTML = `
+      <div class="space-y-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm text-xs">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div>
+            <span class="font-mono font-bold text-slate-900 text-sm">${data.ticket_code}</span>
+            <span class="ml-2 text-slate-500">(${data.category})</span>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${statusColors[data.status] || 'bg-slate-100 text-slate-700'}">
+            ${data.status}
+          </span>
+        </div>
+
+        <div class="space-y-1.5 text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <p><strong>Report:</strong> ${data.description}</p>
+          ${data.evidence_type ? `<p class="text-[11px] text-slate-600"><strong>Evidence:</strong> ${data.evidence_type} — ${data.evidence_description || 'Attached'}</p>` : ''}
+          ${data.authority_referral ? `<p class="text-[11px] text-purple-700 font-bold">🏛️ <strong>Referred to:</strong> ${data.authority_referral}</p>` : ''}
+        </div>
+
+        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+          <p class="text-[11px] font-bold text-slate-700 mb-2">Complaint Progress Timeline:</p>
+          <div class="space-y-0.5">
+            ${timelineHtml}
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-[11px] text-emerald-900">
+          <strong>Latest Action Note:</strong> ${data.resolution_note}
+        </div>
+      </div>
+    `;
+    initLucide();
+  } catch (err) {
+    resultBox.innerHTML = `<span class="text-rose-600 text-xs">Error tracking complaint.</span>`;
+  }
+}
+
+// ============================================================
+// FEATURE 5: LEGAL AID & AUTHORITY RESOURCE DIRECTORY
+// ============================================================
+
+async function loadLegalResources() {
+  try {
+    const res = await fetch("/api/legal-resources");
+    const resources = await res.json();
+    const container = document.getElementById("legalResourcesGrid");
+    if (!container) return;
+
+    container.innerHTML = resources.map(r => {
+      let badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
+      if (r.type === "Legal Aid") badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+      if (r.type === "Worker Support") badgeClass = "bg-purple-100 text-purple-800 border-purple-200";
+
+      return `
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex flex-col justify-between space-y-3 resource-card">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                <i data-lucide="${r.icon}" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}">
+                ${r.type}
+              </span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-900">${r.name}</h4>
+            <p class="text-xs text-slate-600 leading-relaxed">${r.description}</p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 space-y-1.5 text-[11px]">
+            <div class="text-slate-600 flex items-center space-x-1.5">
+              <i data-lucide="phone-call" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span class="font-medium">${r.contact}</span>
+            </div>
+            <a href="${r.website}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1 transition">
+              <span>Official Portal</span>
+              <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          </div>
+        </div>
+      `;
+    }).join("");
+    initLucide();
+  } catch (err) {
+    console.error("Failed to load legal resources:", err);
+  }
+}
+
+// ============================================================
+// FEATURE 6: PREVENTION & PROACTIVE COMPLIANCE DASHBOARD (ADMIN)
+// ============================================================
+
+async function loadPreventionDashboard() {
+  try {
+    const res = await fetch("/api/prevention/dashboard");
+    const data = await res.json();
+
+    const scoreEl = document.getElementById("complianceScore");
+    const gradeEl = document.getElementById("complianceGrade");
+    if (scoreEl) scoreEl.innerText = data.compliance_score;
+    if (gradeEl) {
+      gradeEl.innerText = data.compliance_grade;
+      const gradeColors = {
+        A: "text-emerald-600",
+        B: "text-blue-600",
+        C: "text-amber-600",
+        D: "text-orange-600",
+        F: "text-rose-600"
+      };
+      gradeEl.className = `text-3xl font-black ${gradeColors[data.compliance_grade] || 'text-slate-700'}`;
+    }
+
+    const openCompEl = document.getElementById("prevOpenComplaints");
+    const excessEl = document.getElementById("prevExcessiveShifts");
+    const critEl = document.getElementById("prevCriticalAlerts");
+    const hoursEl = document.getElementById("prevWeeklyHours");
+
+    if (openCompEl) openCompEl.innerText = data.open_complaints;
+    if (excessEl) excessEl.innerText = data.excessive_shift_count;
+    if (critEl) critEl.innerText = data.critical_safety_complaints;
+    if (hoursEl) hoursEl.innerText = `${data.total_workforce_hours_this_week} hrs`;
+
+    // Excessive shifts list
+    const excessContainer = document.getElementById("excessiveWorkersContainer");
+    if (excessContainer) {
+      if (!data.excessive_shift_workers || data.excessive_shift_workers.length === 0) {
+        excessContainer.innerHTML = `
+          <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 font-medium flex items-center space-x-2">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+            <span>All workforce shift hours are within safe 48-hour statutory health limits.</span>
+          </div>
+        `;
+      } else {
+        excessContainer.innerHTML = data.excessive_shift_workers.map(w => `
+          <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 flex items-center justify-between text-xs">
+            <div>
+              <span class="font-bold text-slate-900">${w.name}</span>
+              <span class="text-slate-500 font-mono">(${w.worker_code})</span>
+              <p class="text-[11px] text-slate-600">${w.role} • <strong>${w.overtime_hours} hrs OT</strong></p>
+            </div>
+            <div class="text-right">
+              <span class="text-rose-700 font-black text-sm">${w.weekly_hours} hrs/wk</span>
+              <span class="block text-[10px] px-2 py-0.5 rounded font-bold uppercase ${w.risk_level === 'Critical' ? 'bg-rose-200 text-rose-800' : 'bg-amber-200 text-amber-800'} mt-0.5">
+                ${w.risk_level} Overwork
+              </span>
+            </div>
+          </div>
+        `).join("");
+      }
+    }
+
+    // Recommendations list
+    const recsContainer = document.getElementById("recommendationsContainer");
+    if (recsContainer) {
+      recsContainer.innerHTML = data.recommendations.map(r => {
+        const priorityColors = {
+          Critical: "border-rose-300 bg-rose-50/80 text-rose-900",
+          High: "border-amber-300 bg-amber-50/80 text-amber-900",
+          Medium: "border-blue-300 bg-blue-50/80 text-blue-900",
+          Low: "border-emerald-300 bg-emerald-50/80 text-emerald-900"
+        };
+        const badgeColors = {
+          Critical: "bg-rose-200 text-rose-800",
+          High: "bg-amber-200 text-amber-800",
+          Medium: "bg-blue-200 text-blue-800",
+          Low: "bg-emerald-200 text-emerald-800"
+        };
+
+        return `
+          <div class="p-3 rounded-xl border ${priorityColors[r.priority] || 'border-slate-200 bg-white'} space-y-1 text-xs">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-1.5 font-bold">
+                <i data-lucide="${r.icon}" class="w-4 h-4"></i>
+                <span>${r.title}</span>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${badgeColors[r.priority]}">
+                ${r.priority} Priority
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-700 leading-relaxed">${r.description}</p>
+          </div>
+        `;
+      }).join("");
+    }
+    initLucide();
+  } catch (err) {
+    console.error("Failed to load prevention dashboard:", err);
+  }
+}
+
+// ============================================================
+// COMPLAINTS MANAGEMENT (ADMIN)
+// ============================================================
+
+async function loadComplaints() {
+  try {
+    const res = await fetch("/api/complaints");
+    const complaints = await res.json();
+    const container = document.getElementById("complaintsListContainer");
+    if (!container) return;
+
+    if (complaints.length === 0) {
+      container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No complaints filed yet.</div>`;
+      return;
+    }
+
+    const statusColors = {
+      "Submitted": "bg-blue-100 text-blue-800",
+      "Under Review": "bg-amber-100 text-amber-800",
+      "Referred to Authority": "bg-purple-100 text-purple-800",
+      "Resolved": "bg-emerald-100 text-emerald-800"
+    };
+
+    container.innerHTML = complaints.map(c => `
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-1.5">
+            <span class="font-bold text-slate-900 font-mono">${c.ticket_code}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-white border border-slate-200 text-slate-700">${c.category}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${statusColors[c.status] || 'bg-slate-100 text-slate-700'}">${c.status}</span>
+        </div>
+
+        <p class="text-slate-700 leading-snug">${c.description}</p>
+
+        ${c.evidence_type ? `<div class="text-[11px] text-slate-600 bg-white p-2 rounded border border-slate-200"><strong>Evidence (${c.evidence_type}):</strong> ${c.evidence_description || 'Attached with report'}</div>` : ''}
+
+        ${c.authority_referral ? `<div class="text-[11px] text-purple-800 bg-purple-50 p-2 rounded border border-purple-200"><strong>🏛️ Referred to:</strong> ${c.authority_referral}</div>` : ''}
+
+        <div class="text-[11px] text-slate-500 bg-white p-2 rounded border border-slate-200">
+          <strong>Action / Resolution Note:</strong> ${c.resolution_note}
+        </div>
+
+        <div class="flex items-center justify-between pt-1 border-t border-slate-200 text-[11px]">
+          <span class="text-slate-400">${c.is_anonymous ? '🔒 Anonymous Worker' : (c.worker_name || 'Worker')} • ${c.created_at || 'Recently'}</span>
+          <div class="space-x-1">
+            ${c.status === 'Submitted' ? `
+              <button onclick="updateComplaint('${c.ticket_code}', 'Under Review')" class="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition">Review</button>
+            ` : ''}
+            ${c.status === 'Under Review' || c.status === 'Submitted' ? `
+              <button onclick="referComplaint('${c.ticket_code}')" class="px-2 py-0.5 bg-purple-600 hover:bg-purple-700 text-white rounded font-semibold transition">Refer to Authority</button>
+            ` : ''}
+            ${c.status !== 'Resolved' ? `
+              <button onclick="updateComplaint('${c.ticket_code}', 'Resolved')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold transition">Resolve</button>
+            ` : '<span class="text-emerald-700 font-bold">✓ Case Closed</span>'}
+          </div>
+        </div>
+      </div>
+    `).join("");
+    initLucide();
+  } catch (err) {
+    console.error("Failed to load complaints:", err);
+  }
+}
+
+async function updateComplaint(ticketCode, status) {
+  const note = prompt(`Enter note for complaint ${ticketCode}:`, status === "Resolved" ? "Issue investigated and resolution verified with worker." : "Case under active investigation by compliance team.");
+  if (note === null) return;
+
+  try {
+    const res = await fetch("/api/complaints/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket_code: ticketCode, status, resolution_note: note })
+    });
+    const data = await res.json();
+    alert(data.message || "Updated successfully.");
+    await loadComplaints();
+    await loadPreventionDashboard();
+  } catch (err) {
+    alert("Failed: " + err.message);
+  }
+}
+
+async function referComplaint(ticketCode) {
+  const authority = prompt("Select or type labour authority/legal-aid service to refer to:", "District Labour Commissioner, Chennai");
+  if (!authority) return;
+  const note = prompt("Enter official referral note:", "Case dossier forwarded to official authority for statutory labor inspection.");
+  if (note === null) return;
+
+  try {
+    const res = await fetch("/api/complaints/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticket_code: ticketCode,
+        status: "Referred to Authority",
+        resolution_note: note,
+        authority_referral: authority
+      })
+    });
+    const data = await res.json();
+    alert(data.message || "Complaint referred to authority.");
+    await loadComplaints();
+    await loadPreventionDashboard();
+  } catch (err) {
+    alert("Failed: " + err.message);
   }
 }
 

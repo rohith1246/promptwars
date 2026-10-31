@@ -14,6 +14,7 @@ Authentication:
 """
 
 import os
+import re
 import sys
 import json
 import urllib.request
@@ -29,7 +30,7 @@ from sqlalchemy.orm import joinedload
 
 from config import get_config
 from database import (
-    init_db, db_session, Worker, Attendance, Grievance, generate_ticket_code
+    init_db, db_session, Worker, Attendance, Grievance, Complaint, generate_ticket_code, generate_complaint_code
 )
 from security import (
     sanitize_text, validate_ticket_code, sanitize_grievance_payload, add_security_headers,
@@ -616,6 +617,327 @@ def ai_chat():
         "reply": reply,
         "source": "fairshift-knowledge-base"
     }), 200
+
+
+# ============================================================
+# FEATURE 4: ENHANCED COMPLAINT & WORKER PROTECTION SYSTEM
+# ============================================================
+
+@app.route("/api/complaints", methods=["POST"])
+@limiter.limit("10 per minute")
+def submit_complaint():
+    """
+    Submit a workplace complaint with optional evidence.
+    Supports anonymous and identified submissions.
+    """
+    data = request.get_json() or {}
+    category = data.get("category", "").strip()
+    description = sanitize_text(data.get("description", ""), max_length=2000)
+    evidence_type = data.get("evidence_type", "").strip()
+    evidence_description = sanitize_text(data.get("evidence_description", ""), max_length=1500)
+    is_anonymous = data.get("is_anonymous", True)
+
+    valid_categories = ["Unpaid Overtime", "Withheld Salary", "Workplace Harassment", "Unsafe Conditions", "Discrimination", "Other"]
+    valid_evidence_types = ["Attendance Records", "Salary Slips", "Messages/Screenshots", "Witness Statement", "Other", ""]
+
+    if category not in valid_categories:
+        return jsonify({"error": f"Invalid category. Must be one of: {', '.join(valid_categories)}"}), 400
+
+    if not description or len(description) < 10:
+        return jsonify({"error": "Description must be at least 10 characters."}), 400
+
+    if evidence_type and evidence_type not in valid_evidence_types:
+        evidence_type = "Other"
+
+    session_db = db_session()
+    ticket_code = generate_complaint_code()
+    while session_db.query(Complaint).filter_by(ticket_code=ticket_code).first():
+        ticket_code = generate_complaint_code()
+
+    worker_id = None
+    if not is_anonymous:
+        user = session.get("user")
+        if user and user.get("role") == "worker":
+            worker_id = user.get("worker_id")
+
+    new_complaint = Complaint(
+        ticket_code=ticket_code,
+        worker_id=worker_id,
+        category=category,
+        description=description,
+        evidence_type=evidence_type or None,
+        evidence_description=evidence_description or None,
+        status="Submitted",
+        is_anonymous=1 if is_anonymous else 0,
+    )
+    session_db.add(new_complaint)
+    session_db.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Complaint submitted successfully. Save your tracking code.",
+        "ticket_code": ticket_code
+    }), 201
+
+
+@app.route("/api/complaints/track/<ticket_code>", methods=["GET"])
+def track_complaint(ticket_code):
+    """Track complaint progress using ticket code."""
+    clean_code = ticket_code.strip().upper()
+    if not re.match(r"^FC-\d{4,6}$", clean_code):
+        return jsonify({"error": "Invalid complaint code format. Example: FC-20001"}), 400
+
+    session_db = db_session()
+    complaint = session_db.query(Complaint).filter_by(ticket_code=clean_code).first()
+    if not complaint:
+        return jsonify({"error": "Complaint not found. Please verify the code."}), 404
+
+    # Build a timeline
+    timeline = [{"step": "Submitted", "description": "Complaint received and logged securely.", "completed": True}]
+    if complaint.status in ["Under Review", "Referred to Authority", "Resolved"]:
+        timeline.append({"step": "Under Review", "description": "Being reviewed by compliance team.", "completed": True})
+    else:
+        timeline.append({"step": "Under Review", "description": "Awaiting review.", "completed": False})
+    if complaint.status in ["Referred to Authority", "Resolved"]:
+        timeline.append({"step": "Referred to Authority", "description": f"Referred to: {complaint.authority_referral or 'Appropriate authority'}", "completed": True})
+    else:
+        timeline.append({"step": "Referred to Authority", "description": "Pending referral if needed.", "completed": False})
+    if complaint.status == "Resolved":
+        timeline.append({"step": "Resolved", "description": "Action taken and case closed.", "completed": True})
+    else:
+        timeline.append({"step": "Resolved", "description": "Awaiting resolution.", "completed": False})
+
+    result = complaint.to_dict()
+    result["timeline"] = timeline
+    return jsonify(result)
+
+
+@app.route("/api/complaints", methods=["GET"])
+def list_complaints():
+    """List all complaints (for admin dashboard)."""
+    session_db = db_session()
+    complaints = session_db.query(Complaint).order_by(Complaint.id.desc()).all()
+    return jsonify([c.to_dict() for c in complaints])
+
+
+@app.route("/api/complaints/update", methods=["POST"])
+def update_complaint():
+    """Update complaint status (admin action)."""
+    data = request.get_json() or {}
+    ticket_code = data.get("ticket_code", "").strip().upper()
+    new_status = data.get("status", "").strip()
+    resolution_note = sanitize_text(data.get("resolution_note", ""), max_length=1000)
+    authority_referral = sanitize_text(data.get("authority_referral", ""), max_length=200)
+
+    valid_statuses = ["Submitted", "Under Review", "Referred to Authority", "Resolved"]
+    if new_status not in valid_statuses:
+        return jsonify({"error": "Invalid status."}), 400
+
+    session_db = db_session()
+    complaint = session_db.query(Complaint).filter_by(ticket_code=ticket_code).first()
+    if not complaint:
+        return jsonify({"error": "Complaint not found."}), 404
+
+    complaint.status = new_status
+    complaint.updated_at = datetime.utcnow()
+    if resolution_note:
+        complaint.resolution_note = resolution_note
+    if authority_referral:
+        complaint.authority_referral = authority_referral
+
+    session_db.commit()
+    return jsonify({
+        "message": f"Complaint {ticket_code} updated to '{new_status}'.",
+        "complaint": complaint.to_dict()
+    })
+
+
+# ============================================================
+# FEATURE 5: LEGAL AID & AUTHORITY RESOURCE DIRECTORY
+# ============================================================
+
+@app.route("/api/legal-resources", methods=["GET"])
+def get_legal_resources():
+    """
+    Returns curated directory of labor authorities, legal aid services,
+    and worker support organizations.
+    """
+    resources = [
+        {
+            "name": "District Labour Commissioner",
+            "type": "Government Authority",
+            "description": "File formal complaints regarding wage theft, unpaid overtime, and unsafe working conditions under the Factories Act.",
+            "contact": "labour.commissioner@tn.gov.in",
+            "website": "https://labour.tn.gov.in",
+            "icon": "landmark"
+        },
+        {
+            "name": "National Human Rights Commission (NHRC)",
+            "type": "Government Authority",
+            "description": "Report human rights violations including forced labor, discrimination, and workplace harassment.",
+            "contact": "1800-345-4545 (Toll Free)",
+            "website": "https://nhrc.nic.in",
+            "icon": "shield"
+        },
+        {
+            "name": "Legal Services Authority (NALSA)",
+            "type": "Legal Aid",
+            "description": "Free legal aid for workers earning below ₹9,000/month. Covers labor disputes, wage recovery, and workplace injury claims.",
+            "contact": "nalsa@nic.in",
+            "website": "https://nalsa.gov.in",
+            "icon": "scale"
+        },
+        {
+            "name": "Employee Provident Fund Organisation (EPFO)",
+            "type": "Government Authority",
+            "description": "File grievances related to PF deduction irregularities, missing employer contributions, or withdrawal delays.",
+            "contact": "1800-118-005 (Toll Free)",
+            "website": "https://epfigms.gov.in",
+            "icon": "wallet"
+        },
+        {
+            "name": "Employees' State Insurance Corporation (ESIC)",
+            "type": "Government Authority",
+            "description": "Report employer non-compliance with ESI contributions or denial of medical benefits.",
+            "contact": "1800-11-5085",
+            "website": "https://esic.gov.in",
+            "icon": "heart-pulse"
+        },
+        {
+            "name": "National Commission for Safai Karamcharis",
+            "type": "Worker Support",
+            "description": "Specialized support for sanitation workers facing exploitation, hazardous conditions, or discrimination.",
+            "contact": "011-23381025",
+            "website": "https://ncsk.gov.in",
+            "icon": "users"
+        },
+        {
+            "name": "Building & Other Construction Workers Board",
+            "type": "Worker Support",
+            "description": "Registration and welfare benefits for construction workers including insurance, education aid, and housing.",
+            "contact": "State Labour Department",
+            "website": "https://labour.gov.in/bocw",
+            "icon": "hard-hat"
+        },
+        {
+            "name": "Shram Suvidha Portal (Ministry of Labour)",
+            "type": "Government Authority",
+            "description": "Unified portal for labour compliance, inspection reports, and filing complaints against employers.",
+            "contact": "011-23473212",
+            "website": "https://shramsuvidha.gov.in",
+            "icon": "file-text"
+        }
+    ]
+    return jsonify(resources)
+
+
+# ============================================================
+# FEATURE 6: WORKPLACE PREVENTION & COMPLIANCE DASHBOARD
+# ============================================================
+
+@app.route("/api/prevention/dashboard", methods=["GET"])
+def prevention_dashboard():
+    """
+    Prevention analytics: excessive shift monitoring, unresolved complaint tracking,
+    and compliance scoring for proactive workplace safety.
+    """
+    session_db = db_session()
+
+    workers = session_db.query(Worker).all()
+    all_attendance = session_db.query(Attendance).all()
+    complaints = session_db.query(Complaint).all()
+    grievances = session_db.query(Grievance).all()
+
+    # Worker hours aggregation (last 7 days)
+    today = date.today()
+    week_ago = today - timedelta(days=7)
+    recent_attendance = [a for a in all_attendance if a.date and a.date >= week_ago]
+
+    worker_weekly = {}
+    for a in recent_attendance:
+        wid = a.worker_id
+        if wid not in worker_weekly:
+            worker_weekly[wid] = {"total": 0.0, "overtime": 0.0, "shifts": 0}
+        worker_weekly[wid]["total"] += (a.total_hours or 0.0)
+        worker_weekly[wid]["overtime"] += (a.overtime_hours or 0.0)
+        worker_weekly[wid]["shifts"] += 1
+
+    excessive_shift_workers = []
+    for w in workers:
+        data = worker_weekly.get(w.id, {"total": 0, "overtime": 0, "shifts": 0})
+        if data["total"] > 48:
+            excessive_shift_workers.append({
+                "worker_code": w.worker_code,
+                "name": w.name,
+                "role": w.role,
+                "weekly_hours": round(data["total"], 1),
+                "overtime_hours": round(data["overtime"], 1),
+                "risk_level": "Critical" if data["total"] > 60 else "Warning"
+            })
+
+    # Unresolved complaints and grievances
+    open_complaints = sum(1 for c in complaints if c.status not in ["Resolved"])
+    open_grievances = sum(1 for g in grievances if g.status != "Resolved")
+    critical_complaints = sum(1 for c in complaints if c.category in ["Unsafe Conditions", "Workplace Harassment"] and c.status != "Resolved")
+
+    # Compliance scoring
+    total_issues = open_complaints + open_grievances
+    base_score = 100
+    score = max(0, base_score - (total_issues * 5) - (len(excessive_shift_workers) * 8) - (critical_complaints * 10))
+
+    return jsonify({
+        "total_workers": len(workers),
+        "excessive_shift_workers": excessive_shift_workers,
+        "excessive_shift_count": len(excessive_shift_workers),
+        "open_complaints": open_complaints,
+        "open_grievances": open_grievances,
+        "critical_safety_complaints": critical_complaints,
+        "compliance_score": score,
+        "compliance_grade": "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 else "D" if score >= 40 else "F",
+        "total_workforce_hours_this_week": round(sum(d["total"] for d in worker_weekly.values()), 1),
+        "recommendations": _generate_recommendations(excessive_shift_workers, open_complaints, open_grievances, critical_complaints)
+    })
+
+
+def _generate_recommendations(excessive, complaints, grievances, critical):
+    """Generate actionable compliance recommendations."""
+    recs = []
+    if excessive:
+        recs.append({
+            "priority": "High",
+            "icon": "alert-triangle",
+            "title": "Excessive Working Hours Detected",
+            "description": f"{len(excessive)} worker(s) exceeded 48-hour weekly limit. Rotate shifts immediately to prevent fatigue-related accidents."
+        })
+    if critical > 0:
+        recs.append({
+            "priority": "Critical",
+            "icon": "shield-alert",
+            "title": "Critical Safety Complaints Unresolved",
+            "description": f"{critical} critical complaint(s) about unsafe conditions or harassment require immediate investigation."
+        })
+    if complaints > 0:
+        recs.append({
+            "priority": "Medium",
+            "icon": "file-warning",
+            "title": "Open Complaints Pending",
+            "description": f"{complaints} complaint(s) awaiting review. Timely resolution improves worker trust and SDG 8 compliance."
+        })
+    if grievances > 0:
+        recs.append({
+            "priority": "Medium",
+            "icon": "message-circle",
+            "title": "Grievances Require Attention",
+            "description": f"{grievances} grievance(s) still open. Address to maintain workplace transparency."
+        })
+    if not recs:
+        recs.append({
+            "priority": "Low",
+            "icon": "check-circle",
+            "title": "All Clear — Exemplary Compliance",
+            "description": "No outstanding issues. Continue maintaining high standards of decent work practices."
+        })
+    return recs
 
 
 if __name__ == "__main__":

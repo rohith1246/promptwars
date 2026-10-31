@@ -1,162 +1,170 @@
-# FairShift — A Decent Work Platform for Employee-Intensive Organisations
+# FairShift — Your Work Has Value. Your Voice Has Power.
 
 > **Theme:** UN SDG 8 – Decent Work and Economic Growth  
 > **Event:** Prompt Wars 2026 (Prompt Wars × SRM ACM Student Chapter)  
-> **Repository:** [https://github.com/rohith1246/promptwars.git](https://github.com/rohith1246/promptwars.git)
+> **Guidance:** Dr. M. Suchithra, Associate Professor, Department of Computing Technologies, SRMIST Kattankulathur  
+> **Repository:** [https://github.com/rohith1246/promptwars.git](https://github.com/rohith1246/promptwars.git)  
+> **Live Deployed App:** [https://fairshift-app.onrender.com](https://fairshift-app.onrender.com)
 
 ---
 
-## 🔐 Role-Based Authentication & Access Control
+## 🎙️ The Pitch: Why FairShift Exists
 
-FairShift incorporates a role-based login gate that secures internal workforce rosters and grievance desks:
-- **Worker Portal:** Workers sign in with their unique **Worker ID** and **PIN** to access their personal shift logs, transparent multilingual payslips, and anonymous reporting.
-- **Admin / Employer Dashboard:** Supervisors sign in with **Admin Credentials** to manage sector rosters, view overtime analytics, and triage grievances.
+> *"Imagine a worker working 12 hours a day but getting paid for only 8 hours. The employer refuses to pay overtime. The worker knows it's unfair, but stays silent because they are afraid of losing their job.*  
+> ***Who will stand up for that worker?***  
+> *That is why we created **FairShift**. Our mission is simple: **no worker should have to fight workplace exploitation alone.***"
 
-### Pre-Configured Test Accounts (Quick-Fill Available in UI)
+FairShift is a worker-support platform designed to make workplaces fairer, safer, and more transparent under **United Nations Sustainable Development Goal 8 (Decent Work & Economic Growth)**.
+
+---
+
+## 🚀 How It Works (4-Stage Worker Protection Pipeline)
+
+1. **Report a Problem:** A worker visits the platform and reports workplace exploitation—such as unpaid overtime, withheld salary, workplace harassment, or unsafe conditions.
+2. **Submit Supporting Evidence:** The worker can upload or reference supporting evidence (shift logs, salary slips, bank SMS, chat messages, or co-worker witness statements).
+3. **Legal Aid & Authority Guidance:** FairShift organizes the complaint dossier, protects the worker's identity, and guides them directly to appropriate statutory authorities (District Labour Commissioners, NALSA free legal aid, EPFO, ESIC, NHRC).
+4. **Follow Resolution Progress:** Workers follow real-time progress via their unique tracking code (`FC-XXXXX`) instead of feeling helpless or alone.
+
+---
+
+## 🌟 6 Core Working Features (Built & Verified)
+
+### 1. Shift Attendance & 1.5× Overtime Tracker
+- **1-Click QR Check-In / Check-Out:** Instant shift tracking simulating on-site badges.
+- **Automated Overtime Math:** Distinguishes normal hours (up to 8.0 hrs) from overtime hours (>8.0 hrs), crediting statutory 1.5× overtime multipliers.
+- **48-Hour Fatigue Guardrail (SDG 8.8):** Tracks cumulative weekly shifts and warns workers and site supervisors before exhaustion leads to accidents.
+
+### 2. Transparent Multilingual Payslip & Formula Proof
+- **Mathematical Formula:**  
+  $$\text{Net Take-Home} = (\text{Regular Hours} \times \text{Rate}) + (\text{Overtime Hours} \times \text{Rate} \times 1.5) - \text{PF/ESI Deductions (5\%)}$$
+- **Trilingual Localization:** Instant real-time translations into **English**, **Hindi (हिन्दी)**, **Tamil (தமிழ்)**, and **Telugu (తెలుగు)**.
+- **Eliminates Wage Opacity:** Frontline workers see exactly how every rupee was calculated before payday.
+
+### 3. Zero-Knowledge Anonymous Safety Hazard Reporting
+- **Total Anonymity Guarantee:** Strips worker identity, names, phone numbers, and IP addresses before database storage.
+- **Cryptographic Tracking Code:** Generates unique tracking tickets (e.g. `FS-10492`) to check status updates without revealing identity.
+- **Employer Triage Board:** Supervisors investigate incidents and log corrective action notes visible to workers.
+
+### 4. Workplace Complaint & Evidence Organiser (New)
+- **Categorized Issue Filing:** Structured reporting for unpaid overtime, withheld salary, harassment, and unsafe conditions.
+- **Supporting Evidence Vault:** Organizes salary slips, attendance registers, WhatsApp messages, and witness statements.
+- **Multi-Step Progress Timeline:** Tracks status (`Submitted` $\rightarrow$ `Under Review` $\rightarrow$ `Referred to Authority` $\rightarrow$ `Resolved`).
+
+### 5. Legal Aid & Authority Referral Directory (New)
+- **Curated Statutory Directory:** Direct links, contacts, and mandates for 8+ statutory bodies:
+  - District Labour Commissioner (Factories Act compliance & wage recovery)
+  - National Legal Services Authority (NALSA - Free legal aid for workers)
+  - Employee Provident Fund Organisation (EPFO) & ESIC
+  - National Commission for Safai Karamcharis (Sanitation worker support)
+  - Building & Other Construction Workers (BOCW) Welfare Board
+  - National Human Rights Commission (NHRC)
+
+### 6. Exploitation Prevention & Compliance Radar (New)
+- **Proactive Early Detection:** Stops exploitation *before* it happens.
+- **Compliance Score & Grade:** Real-time scoring (Grade A–F) based on excessive hours, critical safety alerts, and open claims.
+- **Automated Actionable Recommendations:** Highlights shift rotations and safety inspections needed to prevent labor disputes.
+
+---
+
+## 💼 Business Model & Sustainability
+
+- **B2B Enterprise Subscriptions:** Affordable shift management, fatigue compliance radars, and statutory audit logging for construction firms, universities, hospitals, and factories.
+- **Legal & Social Partnerships:** Working alongside legal aid societies, labor unions, and NGOs to provide workers with support without charging vulnerable laborers.
+- **The Anti-Retaliation Promise:** Basic complaint filing is always free for workers, and employers cannot buy their way out of accountability.
+
+---
+
+## 🔐 Role-Based Access & Pre-Loaded Demo Accounts
 
 | Role | Username / ID | Password / PIN | Industry / Profile | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin / Employer** | `admin` | `admin123` | Multi-Industry | Full management dashboard, workforce KPIs, live attendance monitoring, and grievance triage desk |
-| **Worker (Construction)** | `CN-102` | `1234` | Skyline Infrastructure | Deepak Verma (Scaffolding Technician, ₹85/hr, 1.5× OT) |
-| **Worker (College)** | `CL-202` | `1234` | SRM University Operations | K. Murugan (Senior Security Guard, ₹80/hr, 1.5× OT) |
+| **Admin / Employer** | `admin` | `admin123` | Multi-Industry | Full management dashboard, compliance radar, attendance logs, and grievance triage |
+| **Worker (Construction)** | `CN-101` | `1234` | Skyline Infrastructure | Ramesh Kumar (Master Mason, ₹95/hr, 1.5× OT) |
+| **Worker (College)** | `CL-201` | `1234` | SRM University Operations | Lakshmi Narayanan (Sanitation Lead, ₹75/hr, 1.5× OT) |
 
-> 💡 **Evaluator Convenience:** The login screen provides 1-click **"Quick Fill"** preset buttons for instant testing.
-
----
-
-## 📌 Executive Summary & Problem Statement
-
-Millions of frontline, deskless workers across employee-intensive sectors—such as construction sites, factories, hospitals, and college campus operations—are managed through paper registers, fragile Excel spreadsheets, and informal WhatsApp groups.
-
-### Problems for Workers:
-1. **Wage Opackness:** Workers do not understand how their pay was calculated or whether their overtime hours were properly credited.
-2. **Fear of Retaliation:** Legitimate grievances (harassment, unpaid overtime, safety hazards) go unreported because workers fear being identified and terminated.
-3. **Safety Hazards:** Severe site risks remain unaddressed until someone gets injured.
-4. **Language & Literacy Barriers:** Workers speak regional languages (Hindi, Tamil, Telugu) and use basic smartphones, making standard enterprise HR tools unusable.
-
-### Problems for Employers:
-1. **Blind Spots:** Management has no visibility into who is overworked, fatigued, or close to quitting.
-2. **Audit & Compliance Risk:** Missing statutory registers create crippling fines during labor inspections.
+> 💡 **Evaluator Convenience:** The login screen provides 1-click **"Quick Fill"** buttons for instant demo entry.
 
 ---
 
-## 🌟 The Solution: FairShift
+## 📸 Screenshots Overview
 
-FairShift replaces fragmented manual registers with a **secure, transparent, multilingual decent work platform**.
-
-### Two Supported Real-World Industries:
-1. **🏗️ Construction Site Operations (*Skyline Infrastructure*):** Focuses on high-risk site shifts, automated overtime multipliers, scaffolding hazard reporting, and daily wage calculations for masons, welders, and site laborers.
-2. **🎓 College / Campus Operations (*SRM University Campus Facilities*):** Focuses on campus sanitation shifts, security guard rosters, chemical storage hazard reports, and transparent hourly wages.
-
----
-
-## 🚀 3 Core Working Features (Built & Tested)
-
-### 1. Shift Attendance & Overtime Tracker
-- **1-Click Clock-In / Clock-Out:** Instant check-in simulation with dynamic QR badge.
-- **Automated Overtime Classification:** System automatically logs normal shift hours (up to 8.0 hrs) and overtime hours (>8.0 hrs) at a 1.5x pay multiplier.
-- **Fatigue Guardrail (SDG 8.8):** Tracks cumulative weekly hours. Flags workers exceeding the 48-hour legal limit to prevent exhaustion and accidents.
-
-### 2. Transparent Multilingual Payslip & Formula Proof
-- **Transparent Formula:**  
-  $$\text{Net Pay} = (\text{Regular Hours} \times \text{Rate}) + (\text{Overtime Hours} \times \text{Rate} \times 1.5) - \text{PF/ESI Deductions (5\%)}$$
-- **Multilingual Support:** One-click translation of pay items and mathematical explanations into **English**, **Hindi (हिन्दी)**, **Tamil (தமிழ்)**, and **Telugu (తెలుగు)**.
-- **Visual Proof:** Eliminates wage disputes before pay day by providing workers with live visual calculations.
-
-### 3. Zero-Knowledge Anonymous Grievance & Safety Reporting
-- **Zero Retaliation Guarantee:** Submissions strictly strip worker identity, name, phone number, and IP address.
-- **Unique Tracking Code:** Workers receive an anonymous alphanumeric ticket code (e.g., `FS-10492`) to check status updates without revealing who they are.
-- **Employer Triage Board:** Employers review incidents, mark tickets (*Open* $\rightarrow$ *Under Investigation* $\rightarrow$ *Resolved*), and attach corrective action notes visible to the worker.
+| Screen View | Description |
+| :--- | :--- |
+| `01_landing_hero.png` | Landing page hero with slogan *"Your Work Has Value. Your Voice Has Power."* |
+| `02_six_core_features.png` | Complete 6 core working features grid aligned with UN SDG 8 |
+| `03_legal_aid_directory.png` | Curated Legal Aid & Labour Authority Referral Directory |
+| `04_login_portal.png` | 1-Click instant demo login & worker self-registration portal |
+| `05_worker_portal.png` | Frontline worker dashboard with QR clock-in & 1.5× overtime math |
+| `06_worker_complaint_vault.png` | Workplace complaint filing with evidence vault and timeline tracker |
+| `07_admin_dashboard.png` | Employer operational KPI dashboard with live attendance records |
+| `08_admin_prevention_radar.png` | Proactive prevention radar, Grade A compliance score & recommendations |
+| `09_admin_complaints_desk.png` | Admin complaint triage desk with authority referral workflow |
+| `10_gemini_ai_advisor.png` | FairShift Gemini AI Labor Rights & Decent Work assistant open |
+| `11_mobile_home_view.png` | Mobile-first responsive landing page (iPhone / Android) |
+| `12_mobile_worker_view.png` | Mobile worker portal with 1-click touch targets |
 
 ---
 
-## 👥 Dual-Interface Design
+## 🧪 Automated Test Suite (26/26 Passing)
 
-| Interface | Target Audience | Key Capabilities |
-| :--- | :--- | :--- |
-| **Worker Portal (Mobile-First)** | Deskless workers, masons, sanitation staff | 1-Click QR check-in, transparent payslip in regional languages, anonymous safety hazard reporting, ticket status tracker. |
-| **Employer Admin Dashboard** | Site supervisors, campus managers, HR | Real-time workforce KPIs, 48h fatigue alert radar, live attendance log table, anonymous grievance triage queue. |
-
----
-
-## 🔒 Security & Architectural Rigor (OWASP Compliant)
-
-- **Database:** PostgreSQL (supports **Neon Serverless PostgreSQL** via `DATABASE_URL` with automatic SQLite local fallback).
-- **SQL Injection Defense:** All database interactions are governed through parameterized SQLAlchemy ORM queries.
-- **XSS Sanitization:** User descriptions and notes are strictly sanitized and HTML-escaped.
-- **Zero-Knowledge Privacy:** Grievance endpoints drop all client identifiers before database writes.
-- **Rate Limiting:** `Flask-Limiter` protects endpoints against brute-force flooding (120 req/min).
-- **Hardened HTTP Headers:** Enforces CSP, HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, X-XSS-Protection.
-- **Accessibility (WCAG 2.1 AA):** Screen-reader landmarks, skip-links, ARIA tablists, high color contrast, full keyboard navigation.
-- **FairShift Gemini AI Assistant:** Floating chatbot supporting Google Gemini 1.5 Flash (via optional API key) with resilient built-in fallback knowledge on overtime math, labor laws, and SDG 8 standards.
-- **Worker Self-Registration:** 1-Click worker account sign-up with automatic Worker ID code generation and role allocation.
-
----
-
-## 🧪 Automated Test Suite (22/22 Passing)
-
-Run test suite:
 ```bash
 pytest tests/test_fairshift.py -v
 ```
 
-Tests cover:
-- Admin login, session creation, and secure logout
-- Worker ID + PIN authentication and invalid attempt rejection
-- Worker roster segregation for Construction and College industries
-- Duplicate check-in prevention
-- Overtime calculation accuracy (1.5× rate above 8.0 daily hours)
-- Mathematical payslip formula and deduction verification
-- Multilingual translations (English, Hindi, Tamil, and Telugu)
-- 48-hour fatigue limit detection (UN SDG 8.8)
-- Anonymous ticket generation and zero-knowledge status tracking
-- Employer status triage workflow
-- XSS injection sanitization and OWASP security headers (CSP, HSTS)
-- Strict regex input validation for worker codes (`CN-101`) and PINs
-- Shift hours boundary validation (<0.1h and >24h rejection)
-- Ticket tracking error handling and 404 responses
-- Mathematical negative number guardrails in wage calculation
-- Health check endpoint with SDG 8 metadata
-- Accessible DOM rendering and skip link verification
-- Worker self-registration and instant session assignment
-- FairShift Gemini AI chatbot query and mathematical response verification
+```text
+tests/test_fairshift.py::FairShiftTestSuite::test_00_admin_login_and_logout PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_00_invalid_login_rejection PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_00_worker_login_success PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_01_get_workers_by_industry PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_02_worker_check_in_and_duplicate_prevention PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_03_automated_overtime_calculation_on_checkout PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_04_transparent_payslip_mathematical_accuracy PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_05_multilingual_payslip_translations PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_06_fatigue_alert_guardrail_detection PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_07_anonymous_grievance_submission_zero_knowledge PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_08_employer_grievance_triage_update PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_09_security_headers_enforced PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_10_xss_injection_sanitization_in_grievance PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_11_input_validation_worker_code_and_pin_format PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_12_shift_hours_boundary_validation PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_13_ticket_code_tracking_and_invalid_format_rejection PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_14_nonexistent_ticket_returns_404 PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_15_wage_engine_negative_hours_and_zero_rate_guardrails PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_16_health_check_endpoint PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_17_homepage_accessible_rendering PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_18_worker_signup_registration PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_19_ai_chatbot_response PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_20_complaint_submission_and_tracking PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_21_complaint_management_and_referral PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_22_legal_resources_directory PASSED
+tests/test_fairshift.py::FairShiftTestSuite::test_23_prevention_dashboard PASSED
 
----
-
-## 💻 Local Setup & Neon PostgreSQL
-
-### 1. Run with SQLite (Default Out-of-the-Box)
-```bash
-python app.py
-```
-Open [http://localhost:5000](http://localhost:5000)
-
-### 2. Run with Neon PostgreSQL
-Add your Neon connection string to `.env`:
-```env
-DATABASE_URL=postgresql://user:password@ep-cool-sample.us-east-2.aws.neon.tech/neondb?sslmode=require
-```
-Run:
-```bash
-python app.py
+======================= 26 passed in 159.50s =======================
 ```
 
 ---
 
-## ☁️ Deployment
+## 💻 Tech Stack & Architectural Rigor
 
-### Option A: Render (Direct Git Push)
-1. In Render Dashboard, click **New Web Service** and select `rohith1246/promptwars`.
-2. Build Command: `pip install -r requirements.txt`
-3. Start Command: `gunicorn --bind 0.0.0.0:$PORT wsgi:app`
-4. Add Environment Variable:
-   - `DATABASE_URL`: `postgresql://neondb_owner:npg_ynNQTOj3P0pq@ep-calm-star-b5252an2-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require`
+- **Backend:** Python Flask with SQLAlchemy 2.0 ORM.
+- **Database:** PostgreSQL (Neon Serverless PostgreSQL support with automatic SQLite fallback).
+- **Security:** OWASP Top 10 compliance, CSRF protections, bcrypt-compatible PIN checks, XSS sanitization, Rate-Limiting via Flask-Limiter, strict HTTP security headers.
+- **Frontend:** Vanilla JS, Tailwind CSS, Lucide Icons, Mobile-First Responsive Layout.
+- **AI Integration:** Google Gemini 1.5 Flash via server-side `.env` configuration with resilient fallback labor knowledge engine.
 
-### Option B: Google Cloud Run
+---
+
+## 🏃‍♂️ How to Run Locally
+
 ```bash
-gcloud run deploy fairshift \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars "DATABASE_URL=your_neon_postgresql_url,SECRET_KEY=fairshift-prod-key-2026"
+# 1. Clone repository
+git clone https://github.com/rohith1246/promptwars.git
+cd promptwars
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run application
+python app.py
 ```
+Open `http://localhost:5000` in your browser.

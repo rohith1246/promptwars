@@ -1,0 +1,72 @@
+/* FairShift - Modern Clean Light Theme Stylesheet */
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Crisp Clean Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth Interactive Card Hover */
+.feature-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.feature-card:hover {
+  border-color: #10b981;
+  box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.12);
+}
+
+/* Smooth progress timeline */
+.timeline-step { transition: all 0.3s ease; }
+
+/* Compliance score animation */
+@keyframes scoreReveal {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+.score-reveal { animation: scoreReveal 0.4s ease-out; }
+
+/* Mobile touch targets */
+@media (max-width: 640px) {
+  button, a[href], select, input[type="submit"] {
+    min-height: 42px;
+  }
+}
+
+/* Enhanced card hover */
+.resource-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.resource-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Print Stylesheet for Reports */
+@media print {
+  header, footer, button, select, input {
+    display: none !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+}
