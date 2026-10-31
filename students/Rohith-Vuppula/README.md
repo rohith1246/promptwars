@@ -2,7 +2,7 @@
 
 > **Hackathon Event:** Prompt Wars × ACM SRM Student Chapter 2026  
 > **Guidance:** Dr. M. Suchithra, Associate Professor, Department of Computing Technologies, SRMIST Kattankulathur  
-> **Student:** <RegisterNumber> - <Name>  
+> **Student:** Rohith Vuppula  
 > **Theme:** UN SDG 8 – Decent Work and Economic Growth  
 
 ---
